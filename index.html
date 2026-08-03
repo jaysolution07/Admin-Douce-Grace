@@ -197,6 +197,22 @@ input,select,textarea{font-family:'Jost',sans-serif}
 .card-badge.multi{left:auto;right:10px;background:#c8806a}
 .hint{font-size:11px;color:var(--text-light);line-height:1.5;margin-top:6px}
 
+/* ══ CADRAGE PHOTO ══ */
+.crop-stage{position:relative;width:100%;height:clamp(220px,46vh,380px);background:#0e1526;border-radius:16px;overflow:hidden;touch-action:none;cursor:grab;user-select:none}
+.crop-stage.dragging{cursor:grabbing}
+.crop-stage img{position:absolute;left:50%;top:50%;transform-origin:center center;max-width:none;max-height:none;pointer-events:none}
+.crop-window{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:2px solid #fff;box-shadow:0 0 0 9999px rgba(8,12,24,.62);pointer-events:none;z-index:2}
+.crop-window::before,.crop-window::after{content:'';position:absolute;background:rgba(255,255,255,.4)}
+.crop-window::before{left:33.33%;top:0;bottom:0;width:1px}
+.crop-window::after{top:33.33%;left:0;right:0;height:1px}
+.crop-ratios{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+.crop-ratios .btn{padding:7px 12px;font-size:12px;border-radius:999px}
+.crop-ratios .btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.crop-tools{display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap}
+.crop-tools .btn{padding:7px 12px;font-size:12px}
+.crop-zoom{flex:1;min-width:110px;accent-color:var(--navy)}
+.crop-hint{font-size:11px;color:var(--text-light);margin-top:10px}
+
 /* ══ TOAST ══ */
 #toast{
   position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:14px 20px;
@@ -498,7 +514,6 @@ input,select,textarea{font-family:'Jost',sans-serif}
     <div class="form-group"><label>Description</label><textarea id="p-desc" rows="3" placeholder="Décrivez votre création…"></textarea></div>
 
     <div class="form-group">
-    <div class="form-group">
       <label>Photos de la création <span class="hint-inline">(jusqu'à 4 — la 1ʳᵉ est la photo principale)</span></label>
       <div class="photos-grid">
         <div class="photo-slot">
@@ -661,6 +676,39 @@ input,select,textarea{font-family:'Jost',sans-serif}
   </div>
 </div>
 
+<!-- ══════════ MODAL CADRAGE PHOTO ══════════ -->
+<div class="modal-overlay" id="crop-modal" onclick="if(event.target===this)closeCropModal()">
+  <div class="modal lg">
+    <button class="modal-close" onclick="closeCropModal()">✕</button>
+    <h2>Cadrer la photo</h2>
+    <div class="modal-sub">Zoomez, déplacez l'image et choisissez le format, puis validez.</div>
+    <div class="crop-stage" id="crop-stage">
+      <img id="crop-img" alt="Aperçu à cadrer">
+      <div class="crop-window" id="crop-window"></div>
+    </div>
+    <div class="crop-ratios" id="crop-ratios">
+      <button class="btn btn-soft active" data-ratio="free" onclick="setCropRatio('free',this)">Libre</button>
+      <button class="btn btn-soft" data-ratio="1:1" onclick="setCropRatio('1:1',this)">1:1</button>
+      <button class="btn btn-soft" data-ratio="4:3" onclick="setCropRatio('4:3',this)">4:3</button>
+      <button class="btn btn-soft" data-ratio="3:4" onclick="setCropRatio('3:4',this)">3:4</button>
+      <button class="btn btn-soft" data-ratio="16:9" onclick="setCropRatio('16:9',this)">16:9</button>
+      <button class="btn btn-soft" data-ratio="2:3" onclick="setCropRatio('2:3',this)">2:3</button>
+    </div>
+    <div class="crop-tools">
+      <button class="btn btn-soft" onclick="cropRotate()" title="Pivoter de 90°">↻ Pivoter</button>
+      <button class="btn btn-soft" onclick="cropZoomBy(-0.2)">− Zoom</button>
+      <input type="range" class="crop-zoom" id="crop-zoom" min="1" max="4" step="0.01" value="1" oninput="cropZoomTo(+this.value)">
+      <button class="btn btn-soft" onclick="cropZoomBy(0.2)">+ Zoom</button>
+      <button class="btn btn-outline" onclick="cropReset()">Réinitialiser</button>
+    </div>
+    <div class="crop-hint">💡 Glissez pour déplacer · molette pour zoomer · choisissez le format puis validez.</div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeCropModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="cropApply()">✓ Valider</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════ MODAL CONFIRMATION ══════════ -->
 <div class="modal-overlay" id="confirm-modal" onclick="if(event.target===this)closeConfirm()">
   <div class="modal" style="max-width:400px;text-align:center">
@@ -813,7 +861,7 @@ function buildFilters() {
   const cats = [...new Set(PRODUCTS.map(p => p.cat).filter(Boolean))];
   const wrap = document.getElementById('prod-filters');
   wrap.innerHTML = `<button class="chip active" onclick="setCatFilter('')">Tout</button>` +
-    cats.map(c => `<button class="chip" onclick="setCatFilter('${escAttr(c)}')">${esc(c)}</button>`).join('');
+    cats.map(c => `<button class="chip" data-cat="${esc(c)}" onclick="setCatFilter(this.dataset.cat)">${esc(c)}</button>`).join('');
 }
 
 function setCatFilter(cat) {
@@ -842,7 +890,7 @@ function renderProducts() {
   grid.innerHTML = filtered.map(p => `
     <div class="card ${p.active ? '' : 'off-card'}">
       <div class="card-img">
-        ${p.image ? `<img src="${esc(imgSrc(p.image))}" alt="${esc(p.name)}" onerror="imgFail(this,'${esc(p.emoji || '🧵')}')">` : `<span class="emoji-ph">${esc(p.emoji || '🧵')}</span>`}
+        ${p.image ? `<img src="${esc(imgSrc(p.image))}" alt="${esc(p.name)}" data-emoji="${esc(p.emoji || '🧵')}" onerror="imgFail(this, this.dataset.emoji)">` : `<span class="emoji-ph">${esc(p.emoji || '🧵')}</span>`}
         ${(p.images && p.images.length > 1) ? '<span class="card-badge multi">📷 ' + p.images.length + '</span>' : ''}
         ${p.active ? (p.custom ? '<span class="card-badge">Tissu au choix</span>' : '') : '<span class="card-badge off">Masquée</span>'}
       </div>
@@ -853,12 +901,12 @@ function renderProducts() {
         <div class="card-price">${p.price} €</div>
         ${adminStockLabel(p)}
         <div class="toggle-row">
-          <label class="switch"><input type="checkbox" ${p.active ? 'checked' : ''} onchange="toggleProduct('${escAttr(p.id)}', this.checked)"><span class="slider"></span></label>
+          <label class="switch"><input type="checkbox" ${p.active ? 'checked' : ''} data-pid="${esc(p.id)}" onchange="toggleProduct(this.dataset.pid, this.checked)"><span class="slider"></span></label>
           ${p.active ? 'En ligne' : 'Masquée'}
         </div>
         <div class="card-actions">
-          <button class="btn btn-soft" onclick="openProductModal('${escAttr(p.id)}')">✏️ Modifier</button>
-          <button class="btn btn-danger" onclick="askDelete('produit','${escAttr(p.id)}','${escAttr(p.name)}')">🗑</button>
+          <button class="btn btn-soft" data-pid="${esc(p.id)}" onclick="openProductModal(this.dataset.pid)">✏️ Modifier</button>
+          <button class="btn btn-danger" data-pid="${esc(p.id)}" data-pname="${esc(p.name)}" onclick="askDelete('produit', this.dataset.pid, this.dataset.pname)">🗑</button>
         </div>
       </div>
     </div>`).join('');
@@ -932,7 +980,7 @@ function setProductPreview(i, url) {
 function handleProductFile(ev, i) {
   const file = ev.target.files[0];
   if (!file) return;
-  compressImage(file, (dataUrl) => {
+  openCropModal(file, (dataUrl) => {
     removeImages[i] = false;
     pendingImages[i] = dataUrl;
     setProductPreview(i, dataUrl);
@@ -1144,12 +1192,12 @@ function renderFabrics() {
         <div class="card-name">${esc(f.name)}</div>
         <div class="card-desc">${esc(f.desc || '')}</div>
         <div class="toggle-row">
-          <label class="switch"><input type="checkbox" ${f.active ? 'checked' : ''} onchange="toggleFabric('${escAttr(f.id)}', this.checked)"><span class="slider"></span></label>
+          <label class="switch"><input type="checkbox" ${f.active ? 'checked' : ''} data-fid="${esc(f.id)}" onchange="toggleFabric(this.dataset.fid, this.checked)"><span class="slider"></span></label>
           ${f.active ? 'Disponible' : 'Indisponible'}
         </div>
         <div class="card-actions">
-          <button class="btn btn-soft" onclick="openFabricModal('${escAttr(f.id)}')">✏️ Modifier</button>
-          <button class="btn btn-danger" onclick="askDelete('tissu','${escAttr(f.id)}','${escAttr(f.name)}')">🗑</button>
+          <button class="btn btn-soft" data-fid="${esc(f.id)}" onclick="openFabricModal(this.dataset.fid)">✏️ Modifier</button>
+          <button class="btn btn-danger" data-fid="${esc(f.id)}" data-fname="${esc(f.name)}" onclick="askDelete('tissu', this.dataset.fid, this.dataset.fname)">🗑</button>
         </div>
       </div>
     </div>`).join('');
@@ -1182,7 +1230,7 @@ function renderBrandPhoto() {
 async function uploadBrandPhoto(ev) {
   const file = ev.target.files[0];
   if (!file) return;
-  compressImage(file, async (dataUrl) => {
+  openCropModal(file, async (dataUrl) => {
     toast('Envoi de la photo de marque…');
     try {
       const up = await api('adminUploadImage', { dataUrl });
@@ -1193,6 +1241,7 @@ async function uploadBrandPhoto(ev) {
       toast('Échec : ' + e.message, 'err');
     }
   });
+  ev.target.value = '';
 }
 
 async function setBrandPhoto(url) {
@@ -1228,12 +1277,13 @@ function closeFabricModal() {
 function handleFabricFile(ev) {
   const file = ev.target.files[0];
   if (!file) return;
-  compressImage(file, (dataUrl) => {
+  openCropModal(file, (dataUrl) => {
     removeFabricImg = false;
     pendingFabricImage = dataUrl;
     document.getElementById('f-photo-preview').innerHTML = `<img src="${dataUrl}">`;
     toast('Photo prête — elle sera enregistrée sur Drive.', 'ok');
   });
+  ev.target.value = '';
 }
 
 function clearFabricImage() {
@@ -1347,7 +1397,7 @@ async function reconcileFabrics(tempId, existing, isNew, origIdx, optimisticItem
 function suggestFabrics() {
   const wrap = document.getElementById('p-fabric-chips');
   const existing = [...new Set(FABRICS.map(f => f.name).filter(Boolean))];
-  wrap.innerHTML = existing.map(n => `<button class="chip" onclick="addFabricChip('${escAttr(n)}')">+ ${esc(n)}</button>`).join('');
+  wrap.innerHTML = existing.map(n => `<button class="chip" data-name="${esc(n)}" onclick="addFabricChip(this.dataset.name)">+ ${esc(n)}</button>`).join('');
 }
 
 function addFabricChip(name) {
@@ -1364,7 +1414,7 @@ function buildOrderFilters() {
   const statuses = ['A traiter', 'Traiter', 'En cours', 'Expédiée', 'Livrée', 'Annulée'];
   const wrap = document.getElementById('order-filters');
   wrap.innerHTML = `<button class="chip active" onclick="setStatusFilter('')">Toutes</button>` +
-    statuses.map(s => `<button class="chip" onclick="setStatusFilter('${escAttr(s)}')">${esc(s)}</button>`).join('');
+    statuses.map(s => `<button class="chip" data-status="${esc(s)}" onclick="setStatusFilter(this.dataset.status)">${esc(s)}</button>`).join('');
 }
 
 function setStatusFilter(s) {
@@ -1414,8 +1464,8 @@ function renderOrders() {
     return;
   }
   list.innerHTML = filtered.map(o => `
-    <div class="order-item" id="oi-${escAttr(o.id)}">
-      <div class="order-head" onclick="openOrderModal('${escAttr(o.id)}')">
+    <div class="order-item" id="oi-${esc(o.id)}">
+      <div class="order-head" data-oid="${esc(o.id)}" onclick="openOrderModal(this.dataset.oid)">
         <div class="order-ref">${esc(o.id)}</div>
         <div class="order-meta">
           <div class="nm">${esc(o.name || 'Client')}</div>
@@ -1586,39 +1636,173 @@ async function changePassword() {
   }
 }
 
-// ══════════ IMAGE : compression & utilitaires ══════════
-function compressImage(file, cb) {
+// ══════════ IMAGE : cadrage & compression ══════════
+let cropState = {
+  img: null, cb: null, ratio: 'free', zoom: 1, tx: 0, ty: 0,
+  stageW: 0, stageH: 0, baseW: 0, baseH: 0, dragging: false, lastX: 0, lastY: 0
+};
+
+function openCropModal(file, cb) {
   const reader = new FileReader();
   reader.onload = e => {
     const img = new Image();
     img.onload = () => {
-      const maxDim = 1400;
-      let { width: w, height: h } = img;
-      if (Math.max(w, h) > maxDim) {
-        const r = maxDim / Math.max(w, h);
-        w = Math.round(w * r);
-        h = Math.round(h * r);
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      cb(canvas.toDataURL('image/jpeg', 0.82));
+      cropState.cb = cb;
+      cropState.ratio = 'free';
+      cropState.zoom = 1; cropState.tx = 0; cropState.ty = 0;
+      cropState.img = img;
+      // IMPORTANT : activer la modale AVANT de mesurer le stage (sinon display:none → 0×0)
+      document.getElementById('crop-modal').classList.add('active');
+      const stage = document.getElementById('crop-stage');
+      const r = stage.getBoundingClientRect();
+      cropState.stageW = r.width || stage.clientWidth || 400;
+      cropState.stageH = r.height || stage.clientHeight || 300;
+      const s = Math.max(r.width / img.naturalWidth, r.height / img.naturalHeight);
+      cropState.baseW = Math.round(img.naturalWidth * s);
+      cropState.baseH = Math.round(img.naturalHeight * s);
+      document.querySelectorAll('#crop-ratios .btn').forEach(b => b.classList.toggle('active', b.dataset.ratio === 'free'));
+      document.getElementById('crop-zoom').value = 1;
+      renderCrop();
     };
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
 
+function renderCrop() {
+  const st = cropState;
+  if (!st.img) return;
+  const img = document.getElementById('crop-img');
+  if (img.src !== st.img.src) img.src = st.img.src;
+  img.style.width = st.baseW + 'px';
+  img.style.height = st.baseH + 'px';
+  // fenêtre de cadrage (centrée, selon le format choisi)
+  const win = document.getElementById('crop-window');
+  let cw = st.stageW, ch = st.stageH;
+  if (st.ratio !== 'free') {
+    const [rw, rh] = st.ratio.split(':').map(Number);
+    cw = st.stageW; ch = cw * rh / rw;
+    if (ch > st.stageH) { ch = st.stageH; cw = ch * rw / rh; }
+  }
+  win.style.width = cw + 'px';
+  win.style.height = ch + 'px';
+  // limite le déplacement : l'image couvre toujours la fenêtre
+  const imgW = st.baseW * st.zoom, imgH = st.baseH * st.zoom;
+  const cx = (st.stageW - cw) / 2, cy = (st.stageH - ch) / 2;
+  let minTx = cx - st.stageW / 2 + imgW / 2;
+  let maxTx = (cx + cw) - st.stageW / 2 - imgW / 2;
+  if (minTx > maxTx) st.tx = 0; else st.tx = Math.max(minTx, Math.min(maxTx, st.tx));
+  let minTy = cy - st.stageH / 2 + imgH / 2;
+  let maxTy = (cy + ch) - st.stageH / 2 - imgH / 2;
+  if (minTy > maxTy) st.ty = 0; else st.ty = Math.max(minTy, Math.min(maxTy, st.ty));
+  img.style.transform = `translate(-50%,-50%) translate(${st.tx}px,${st.ty}px) scale(${st.zoom})`;
+}
+
+function cropApply() {
+  const st = cropState;
+  if (!st.img || !st.cb) return;
+  const win = document.getElementById('crop-window');
+  const cw = parseFloat(win.style.width), ch = parseFloat(win.style.height);
+  const imgW = st.baseW * st.zoom, imgH = st.baseH * st.zoom;
+  const imgLeft = st.stageW / 2 + st.tx - imgW / 2;
+  const imgTop = st.stageH / 2 + st.ty - imgH / 2;
+  const cropLeft = (st.stageW - cw) / 2, cropTop = (st.stageH - ch) / 2;
+  const sx = Math.max(0, (cropLeft - imgLeft) / imgW) * st.img.naturalWidth;
+  const sy = Math.max(0, (cropTop - imgTop) / imgH) * st.img.naturalHeight;
+  const sw = Math.min(st.img.naturalWidth - sx, (cw / imgW) * st.img.naturalWidth);
+  const sh = Math.min(st.img.naturalHeight - sy, (ch / imgH) * st.img.naturalHeight);
+  if (sw <= 1 || sh <= 1) { toast('Cadrage trop petit.', 'err'); return; }
+  let ow = Math.round(sw), oh = Math.round(sh);
+  const maxDim = 1400;
+  if (Math.max(ow, oh) > maxDim) {
+    const r = maxDim / Math.max(ow, oh);
+    ow = Math.round(ow * r); oh = Math.round(oh * r);
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = ow; canvas.height = oh;
+  canvas.getContext('2d').drawImage(st.img, sx, sy, sw, sh, 0, 0, ow, oh);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+  const cb = st.cb;
+  closeCropModal();
+  cb(dataUrl);
+}
+
+function closeCropModal() {
+  document.getElementById('crop-modal').classList.remove('active');
+  cropState.img = null; cropState.cb = null;
+  cropState.dragging = false;
+}
+
+function setCropRatio(ratio, btn) {
+  cropState.ratio = ratio;
+  document.querySelectorAll('#crop-ratios .btn').forEach(b => b.classList.toggle('active', b === btn));
+  renderCrop();
+}
+
+function cropZoomTo(v) { cropState.zoom = Math.max(1, Math.min(4, v)); renderCrop(); }
+function cropZoomBy(d) {
+  const z = Math.max(1, Math.min(4, cropState.zoom + d));
+  cropState.zoom = z;
+  document.getElementById('crop-zoom').value = z;
+  renderCrop();
+}
+function cropReset() {
+  cropState.zoom = 1; cropState.tx = 0; cropState.ty = 0;
+  document.getElementById('crop-zoom').value = 1;
+  renderCrop();
+}
+function cropRotate() {
+  const st = cropState;
+  if (!st.img) return;
+  const canvas = document.createElement('canvas');
+  canvas.width = st.img.naturalHeight; canvas.height = st.img.naturalWidth;
+  const ctx = canvas.getContext('2d');
+  ctx.translate(canvas.width, 0); ctx.rotate(Math.PI / 2);
+  ctx.drawImage(st.img, 0, 0);
+  const img = new Image();
+  img.onload = () => {
+    st.img = img;
+    st.zoom = 1; st.tx = 0; st.ty = 0;
+    const s = Math.max(st.stageW / img.naturalWidth, st.stageH / img.naturalHeight);
+    st.baseW = Math.round(img.naturalWidth * s);
+    st.baseH = Math.round(img.naturalHeight * s);
+    document.getElementById('crop-zoom').value = 1;
+    renderCrop();
+  };
+  img.src = canvas.toDataURL('image/jpeg', 0.92);
+}
+
+function initCropStage() {
+  const stage = document.getElementById('crop-stage');
+  stage.addEventListener('pointerdown', e => {
+    cropState.dragging = true;
+    cropState.lastX = e.clientX; cropState.lastY = e.clientY;
+    stage.setPointerCapture(e.pointerId);
+  });
+  stage.addEventListener('pointermove', e => {
+    if (!cropState.dragging) return;
+    cropState.tx += e.clientX - cropState.lastX;
+    cropState.ty += e.clientY - cropState.lastY;
+    cropState.lastX = e.clientX; cropState.lastY = e.clientY;
+    renderCrop();
+  });
+  const up = () => { cropState.dragging = false; };
+  stage.addEventListener('pointerup', up);
+  stage.addEventListener('pointercancel', up);
+  stage.addEventListener('wheel', e => {
+    e.preventDefault();
+    const f = e.deltaY < 0 ? 1.1 : 0.9;
+    cropZoomTo(cropState.zoom * f);
+  }, { passive: false });
+}
+
 function esc(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-function escAttr(s) {
-  return esc(s).replace(/'/g, '&#39;');
 }
 
 // ══════════ INIT ══════════
 document.addEventListener('DOMContentLoaded', () => {
+  initCropStage();
   if (TOKEN) enterApp();
   else document.getElementById('login-screen').classList.remove('hidden');
 });
