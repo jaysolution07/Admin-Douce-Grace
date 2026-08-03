@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Douce Grâce — Espace Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Dancing+Script:wght@600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --beige:#f0e8dc; --beige-light:#f8f3ed; --beige-mid:#e4d5c1; --beige-dark:#c9b49a;
+  --navy:#1e2d4a; --navy-mid:#2e4268; --navy-light:#4a6490;
+  --text:#3a3028; --text-light:#7a6e65; --white:#fff;
+  --green:#2e7d52; --red:#c0392b; --amber:#b8860b; --teal:#2e7d6b; --indigo:#3f51b5;
+  --shadow:0 18px 50px rgba(30,45,74,.12);
+  --radius:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Jost',sans-serif;background:var(--beige-light);color:var(--text);min-height:100vh}
+.hidden{display:none!important}
+button{font-family:'Jost',sans-serif;cursor:pointer}
+input,select,textarea{font-family:'Jost',sans-serif}
+
+/* ══ ÉCRAN DE CONNEXION ══ */
+#login-screen{
+  position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,var(--beige-light),var(--beige-mid));
+  padding:20px;
+}
+.login-card{
+  width:100%;max-width:420px;background:var(--white);border-radius:24px;padding:44px 40px;
+  box-shadow:var(--shadow);text-align:center;border:1px solid var(--beige-mid);
+  animation:rise .5s ease;
+}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.login-brand{font-family:'Dancing Script',cursive;font-size:34px;color:var(--navy);margin-bottom:4px}
+.login-sub{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--text-light);font-size:15px;letter-spacing:2px;margin-bottom:28px;text-transform:uppercase}
+.login-lock{font-size:40px;margin-bottom:12px}
+.form-group{margin-bottom:16px;text-align:left}
+.form-group label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px}
+.form-group input,.form-group select,.form-group textarea{
+  width:100%;padding:12px 16px;border:1.5px solid var(--beige-mid);border-radius:10px;
+  font-size:14px;color:var(--text);background:var(--beige-light);outline:none;transition:border .2s;
+}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--navy-light)}
+.login-error{color:var(--red);font-size:13px;margin-top:10px;min-height:18px}
+.login-hint{margin-top:18px;font-size:11px;color:var(--text-light);line-height:1.6}
+
+/* ══ BOUTONS ══ */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:50px;
+  font-size:12px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;border:none;
+  transition:all .25s;justify-content:center}
+.btn-primary{background:var(--navy);color:#fff;box-shadow:0 6px 20px rgba(30,45,74,.25)}
+.btn-primary:hover{background:var(--navy-mid);transform:translateY(-2px)}
+.btn-outline{background:transparent;color:var(--navy);border:1.5px solid var(--navy)}
+.btn-outline:hover{background:var(--navy);color:#fff}
+.btn-soft{background:var(--beige-mid);color:var(--navy)}
+.btn-soft:hover{background:var(--beige-dark)}
+.btn-danger{background:#fbecec;color:var(--red);border:1px solid #f0c9c4}
+.btn-danger:hover{background:var(--red);color:#fff}
+.btn-success{background:var(--green);color:#fff}
+.btn-success:hover{filter:brightness(1.1)}
+.btn-sm{padding:8px 14px;font-size:10px}
+.btn-block{width:100%}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* ══ LAYOUT APP ══ */
+#app{display:flex;min-height:100vh}
+.sidebar{
+  width:250px;background:var(--navy);color:#fff;flex-shrink:0;padding:28px 18px;
+  display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.sidebar-brand{font-family:'Dancing Script',cursive;font-size:26px;text-align:center;margin-bottom:4px;color:#fff}
+.sidebar-sub{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--beige-dark);text-align:center;margin-bottom:30px}
+.nav-item{
+  display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;margin-bottom:4px;
+  color:#cfd8ea;font-size:13px;font-weight:500;letter-spacing:1px;text-transform:uppercase;
+  cursor:pointer;transition:all .2s;border:none;background:transparent;width:100%;text-align:left;
+}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-item.active{background:var(--beige);color:var(--navy);box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.nav-item .ico{font-size:17px;width:22px;text-align:center}
+.sidebar-foot{margin-top:auto;padding-top:20px;border-top:1px solid rgba(255,255,255,.12)}
+.sidebar-foot a{color:var(--beige-dark);font-size:12px;text-decoration:none;display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:10px;transition:.2s}
+.sidebar-foot a:hover{background:rgba(255,255,255,.08);color:#fff}
+
+.main{flex:1;padding:32px 40px;min-width:0}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap}
+.page-title{font-family:'Dancing Script',cursive;font-size:36px;color:var(--navy);line-height:1}
+.page-sub{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--text-light);font-size:15px;margin-top:4px}
+.head-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+/* ══ STATS ══ */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;margin-bottom:32px}
+.stat-card{background:var(--white);border-radius:var(--radius);padding:22px;border:1px solid var(--beige-mid);transition:transform .25s,box-shadow .25s;position:relative;overflow:hidden}
+.stat-card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+.stat-ico{font-size:26px;margin-bottom:10px}
+.stat-num{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:600;color:var(--navy);line-height:1}
+.stat-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-light);margin-top:6px}
+.stat-card.accent{background:var(--navy);border-color:var(--navy);color:#fff}
+.stat-card.accent .stat-num{color:#fff}
+.stat-card.accent .stat-label{color:var(--beige-dark)}
+
+/* ══ CARTES GRID ══ */
+.toolbar{display:flex;gap:12px;align-items:center;margin-bottom:22px;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;min-width:220px;max-width:340px}
+.search-wrap input{width:100%;padding:11px 18px 11px 40px;border-radius:50px;border:1.5px solid var(--beige-mid);background:#fff;font-size:13px;outline:none;transition:border .2s}
+.search-wrap input:focus{border-color:var(--navy-light)}
+.search-wrap::before{content:"🔍";position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:13px}
+.chip{padding:9px 16px;border-radius:50px;border:1.5px solid var(--beige-mid);background:#fff;font-size:11px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--text-light);cursor:pointer;transition:all .2s}
+.chip:hover{border-color:var(--beige-dark)}
+.chip.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px}
+.card{
+  background:var(--white);border-radius:var(--radius);overflow:hidden;border:1px solid var(--beige-mid);
+  transition:all .3s;display:flex;flex-direction:column;
+}
+.card:hover{transform:translateY(-5px);box-shadow:var(--shadow);border-color:var(--beige-dark)}
+.card-img{height:180px;background:var(--beige);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.card-img img{width:100%;height:100%;object-fit:cover}
+.card-img .emoji-ph{font-size:46px;color:var(--beige-dark)}
+.card-badge{position:absolute;top:10px;left:10px;background:var(--navy);color:#fff;font-size:9px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;padding:3px 9px;border-radius:50px}
+.card-badge.off{background:var(--red)}
+.card-body{padding:16px;display:flex;flex-direction:column;flex:1}
+.card-cat{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-light);margin-bottom:4px}
+.card-name{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--navy);margin-bottom:4px;line-height:1.2}
+.card-desc{font-size:12px;font-weight:300;color:var(--text-light);line-height:1.5;margin-bottom:10px;flex:1}
+.card-price{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--navy);margin-bottom:12px}
+.card-actions{display:flex;gap:8px}
+.card-actions .btn{flex:1;font-size:10px;padding:9px 10px}
+.card.off-card{opacity:.55;filter:grayscale(.8)}
+.toggle-row{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-light);margin-bottom:12px;cursor:pointer}
+.switch{position:relative;width:42px;height:24px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:var(--beige-mid);border-radius:50px;transition:.25s}
+.slider::before{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.25s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.switch input:checked + .slider{background:var(--green)}
+.switch input:checked + .slider::before{transform:translateX(18px)}
+.empty-state{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-light)}
+.empty-state .e-ico{font-size:44px;margin-bottom:12px}
+.empty-state p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:18px}
+
+/* ══ COMMANDES ══ */
+.order-list{display:flex;flex-direction:column;gap:14px}
+.order-item{background:var(--white);border-radius:var(--radius);border:1px solid var(--beige-mid);overflow:hidden;transition:box-shadow .25s}
+.order-item:hover{box-shadow:var(--shadow)}
+.order-head{display:flex;align-items:center;gap:16px;padding:16px 20px;flex-wrap:wrap;cursor:pointer}
+.order-ref{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:17px;color:var(--navy);min-width:110px}
+.order-meta{flex:1;min-width:160px}
+.order-meta .nm{font-size:14px;font-weight:500}
+.order-meta .dt{font-size:12px;color:var(--text-light)}
+.order-total{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--navy);min-width:80px;text-align:right}
+.badge{padding:5px 12px;border-radius:50px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#fff}
+.b-a{background:var(--amber)} .b-t{background:var(--teal)} .b-c{background:var(--indigo)}
+.b-e{background:var(--navy-light)} .b-l{background:var(--green)} .b-x{background:var(--red)}
+.order-detail{display:none;border-top:1px solid var(--beige-mid);background:var(--beige-light);padding:22px}
+.order-item.open .order-detail{display:block}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:760px){.detail-grid{grid-template-columns:1fr}}
+.detail-box{background:#fff;border-radius:12px;padding:18px;border:1px solid var(--beige-mid)}
+.detail-box h4{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-light);margin-bottom:12px}
+.detail-line{font-size:13px;margin-bottom:6px;color:var(--text)}
+.detail-line b{color:var(--navy)}
+.articles-pre{white-space:pre-wrap;font-size:13px;line-height:1.7;color:var(--text);font-family:'Jost',sans-serif}
+.order-save-row{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+
+/* ══ MODALS ══ */
+.modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(30,45,74,.5);backdrop-filter:blur(6px);
+  z-index:1500;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;
+}
+.modal-overlay.active{display:flex}
+.modal{background:#fff;border-radius:22px;width:100%;max-width:560px;padding:32px;position:relative;box-shadow:0 40px 90px rgba(30,45,74,.25);animation:rise .35s ease}
+.modal.lg{max-width:720px}
+.modal h2{font-family:'Dancing Script',cursive;font-size:28px;color:var(--navy);margin-bottom:4px}
+.modal-sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:var(--text-light);margin-bottom:22px}
+.modal-close{position:absolute;top:14px;right:14px;background:var(--beige);border:none;width:34px;height:34px;border-radius:50%;font-size:15px;color:var(--text-light);display:flex;align-items:center;justify-content:center;transition:.2s}
+.modal-close:hover{background:var(--beige-mid)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:600px){.form-row{grid-template-columns:1fr}}
+.check-row{display:flex;align-items:center;gap:10px;margin:14px 0;font-size:13px;color:var(--text);cursor:pointer}
+.check-row input{width:17px;height:17px;accent-color:var(--navy)}
+.modal-actions{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap}
+.modal-actions .btn{flex:1;min-width:130px}
+.photo-picker{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.photo-preview{width:130px;height:130px;border-radius:14px;background:var(--beige);border:2px dashed var(--beige-dark);display:flex;align-items:center;justify-content:center;font-size:30px;overflow:hidden;flex-shrink:0}
+.photo-preview img{width:100%;height:100%;object-fit:cover}
+.photo-controls{flex:1;min-width:200px}
+.photo-controls .btn{width:100%;margin-bottom:10px}
+.photos-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;width:100%}
+.photo-slot{display:flex;flex-direction:column;gap:8px}
+.photo-slot .photo-preview{width:100%;height:100px;font-size:22px}
+.photo-slot-actions{display:flex;gap:6px;margin-top:2px}
+.photo-slot-actions .btn{flex:1;padding:7px 4px;font-size:12px;justify-content:center}
+.hint-inline{font-size:12px;color:#8a7f73;font-weight:400}
+.card-badge.multi{left:auto;right:10px;background:#c8806a}
+.hint{font-size:11px;color:var(--text-light);line-height:1.5;margin-top:6px}
+
+/* ══ TOAST ══ */
+#toast{
+  position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:14px 20px;
+  border-radius:14px;box-shadow:0 12px 30px rgba(30,45,74,.25);font-size:13px;z-index:3000;
+  opacity:0;transform:translateY(16px);pointer-events:none;transition:all .35s;max-width:340px;
+}
+#toast.show{opacity:1;transform:none}
+#toast.err{background:var(--red)}
+#toast.ok{background:var(--green)}
+
+/* ══ RÉGLAGES ══ */
+.settings-card{background:#fff;border-radius:var(--radius);border:1px solid var(--beige-mid);padding:26px;max-width:520px;margin-bottom:20px}
+.settings-card h3{font-family:'Dancing Script',cursive;font-size:24px;color:var(--navy);margin-bottom:6px}
+.settings-card .desc{font-size:13px;color:var(--text-light);margin-bottom:18px}
+.info-line{display:flex;justify-content:space-between;gap:14px;font-size:13px;padding:10px 0;border-bottom:1px solid var(--beige-light)}
+.info-line span{color:var(--text-light)}
+.info-line b{color:var(--navy);word-break:break-all;font-weight:500}
+
+/* ══ RESPONSIVE ══ */
+/* Tablette et petit écran */
+@media(max-width:900px){
+  #app{flex-direction:column}
+  .sidebar{width:100%;height:auto;position:sticky;top:0;z-index:600;flex-direction:row;align-items:center;padding:10px 12px;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .sidebar-brand{font-size:18px;margin:0 10px 0 0;white-space:nowrap}
+  .sidebar-sub{display:none}
+  .nav-item{flex:0 0 auto;padding:10px 14px;font-size:11px;white-space:nowrap;border-radius:50px}
+  .nav-item .ico{font-size:14px}
+  .sidebar-foot{display:none}
+  .main{padding:24px 18px}
+  .page-title{font-size:30px}
+}
+
+/* Téléphone */
+@media(max-width:640px){
+  .sidebar{
+    position:fixed;bottom:0;top:auto;left:0;right:0;
+    padding:8px 6px calc(8px + env(safe-area-inset-bottom));
+    justify-content:space-around;gap:2px;overflow-x:visible;
+    box-shadow:0 -6px 24px rgba(30,45,74,.18);
+    border-radius:18px 18px 0 0;
+  }
+  .sidebar-brand{display:none}
+  .nav-item{
+    flex-direction:column;gap:3px;padding:6px 2px;
+    font-size:9px;letter-spacing:.5px;min-width:0;flex:1;
+    text-align:center;border-radius:12px;
+  }
+  .nav-item .ico{font-size:18px;width:auto}
+  .nav-item.active{background:var(--beige);color:var(--navy)}
+  .main{padding:16px 12px 92px}
+  .page-title{font-size:26px}
+  .head-actions{width:100%}
+  .head-actions .btn{flex:1;min-width:0;padding:12px 10px}
+  .stats-grid{grid-template-columns:1fr 1fr;gap:12px}
+  .stat-card{padding:16px}
+  .stat-num{font-size:28px}
+  .cards-grid{grid-template-columns:1fr 1fr;gap:12px}
+  .card-img{height:130px}
+  .card-body{padding:12px}
+  .card-name{font-size:15px}
+  .card-price{font-size:18px}
+  .card-actions{flex-wrap:wrap}
+  .card-actions .btn{font-size:9px;padding:9px 6px}
+  .toggle-row{font-size:11px}
+  .switch{transform:scale(.9)}
+  .toolbar{flex-wrap:wrap}
+  .search-wrap{max-width:100%;min-width:100%}
+  .chip{padding:9px 14px;font-size:10px}
+  .modal-overlay{padding:0;align-items:flex-end}
+  .modal{
+    width:100%;max-width:100%;
+    border-radius:22px 22px 0 0;
+    padding:26px 18px calc(26px + env(safe-area-inset-bottom));
+    max-height:92vh;overflow-y:auto;
+  }
+  .modal.lg{max-width:100%}
+  .form-row{grid-template-columns:1fr}
+  .form-group input,.form-group select,.form-group textarea{font-size:16px;padding:12px 14px}
+  .modal-actions{flex-direction:row}
+  .modal-actions .btn{flex:1;min-width:0;padding:13px 8px}
+  .photo-picker{flex-direction:column;align-items:stretch}
+  .photo-preview{width:100%;height:180px}
+  .photos-grid{grid-template-columns:repeat(2,1fr)}
+  .photo-slot .photo-preview{height:150px}
+  .order-head{flex-wrap:wrap;gap:10px;padding:14px}
+  .order-ref{min-width:auto}
+  .order-meta{flex:1 1 100%;order:3}
+  .order-total{order:2}
+  .detail-grid{grid-template-columns:1fr}
+  .settings-card{padding:20px 16px}
+  #toast{left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom));text-align:center;border-radius:14px}
+  .login-card{padding:36px 24px;border-radius:20px}
+}
+
+/* Très petit téléphone */
+@media(max-width:380px){
+  .cards-grid{grid-template-columns:1fr}
+}
+
+/* ── Micro-interactions tactiles ── */
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn.busy{opacity:.8;pointer-events:none}
+.nav-item:active,.btn:active,.chip:active{transform:scale(.96)}
+.card:active{transform:scale(.99)}
+.nav-item,.btn,.chip,.switch{-webkit-tap-highlight-color:transparent}
+</style>
+</head>
+<body>
+
+<!-- ══════════ ÉCRAN DE CONNEXION ══════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-lock">🔐</div>
+    <div class="login-brand">Douce Grâce</div>
+    <div class="login-sub">Espace de gestion</div>
+    <div class="form-group">
+      <label>Mot de passe</label>
+      <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn btn-primary btn-block" id="login-btn" onclick="doLogin()">Se connecter</button>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-hint">
+      💡 Première connexion : le mot de passe par défaut est indiqué dans le fichier
+      <b>GS-Admin.txt</b>. Pensez à le changer dans l'onglet « Réglages ».
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ APPLICATION ══════════ -->
+<div id="app" class="hidden">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div>
+      <div class="sidebar-brand">Douce Grâce</div>
+      <div class="sidebar-sub">Espace admin</div>
+    </div>
+    <button class="nav-item active" data-view="dashboard" onclick="showView('dashboard')"><span class="ico">📊</span> Tableau de bord</button>
+    <button class="nav-item" data-view="produits" onclick="showView('produits')"><span class="ico">🧵</span> Créations</button>
+    <button class="nav-item" data-view="tissus" onclick="showView('tissus')"><span class="ico">🎨</span> Tissus</button>
+    <button class="nav-item" data-view="commandes" onclick="showView('commandes')"><span class="ico">🛒</span> Commandes</button>
+    <button class="nav-item" data-view="reglages" onclick="showView('reglages')"><span class="ico">⚙️</span> Réglages</button>
+    <div class="sidebar-foot">
+      <a href="https://jaysolution07.github.io/DouceGrace.fr/" target="_blank">🌐 Voir le site</a>
+      <a href="https://docs.google.com/spreadsheets/d/1GI_woVjvYA7QjF7q0CktKCFbrwUUhhkWGXZ0stNbzRI" target="_blank">📄 Ouvrir la base</a>
+    </div>
+  </aside>
+
+  <!-- CONTENU -->
+  <main class="main">
+
+    <!-- ══ TABLEAU DE BORD ══ -->
+    <section id="view-dashboard">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Bonjour 🌸</div>
+          <div class="page-sub">Voici l'activité de votre boutique en un coup d'œil.</div>
+        </div>
+        <div class="head-actions">
+          <button class="btn btn-primary" onclick="showView('produits')">+ Nouvelle création</button>
+        </div>
+      </div>
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card accent"><div class="stat-ico">✨</div><div class="stat-num" id="st-produits">—</div><div class="stat-label">Créations en ligne</div></div>
+        <div class="stat-card"><div class="stat-ico">🧵</div><div class="stat-num" id="st-tissus">—</div><div class="stat-label">Tissus dispo</div></div>
+        <div class="stat-card"><div class="stat-ico">🛒</div><div class="stat-num" id="st-commandes">—</div><div class="stat-label">Commandes reçues</div></div>
+        <div class="stat-card"><div class="stat-ico">⏳</div><div class="stat-num" id="st-a-traiter">—</div><div class="stat-label">À traiter</div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+        <div class="page-sub" style="margin:0">Dernières commandes</div>
+        <button class="btn btn-soft btn-sm" onclick="showView('commandes')">Toutes les commandes →</button>
+      </div>
+      <div class="order-list" id="dash-orders"></div>
+    </section>
+
+    <!-- ══ CRÉATIONS ══ -->
+    <section id="view-produits" class="hidden">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Créations</div>
+          <div class="page-sub">Vos produits affichés sur la boutique.</div>
+        </div>
+        <div class="head-actions">
+          <button class="btn btn-primary" onclick="openProductModal()">+ Nouvelle création</button>
+        </div>
+      </div>
+      <div class="toolbar">
+        <div class="search-wrap"><input id="prod-search" placeholder="Rechercher une création…" oninput="renderProducts()"></div>
+        <div id="prod-filters" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+      </div>
+      <div class="cards-grid" id="products-grid"></div>
+    </section>
+
+    <!-- ══ TISSUS ══ -->
+    <section id="view-tissus" class="hidden">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Tissus disponibles</div>
+          <div class="page-sub">Vos tissus affichés sur la page « Tissus ».</div>
+        </div>
+        <div class="head-actions">
+          <button class="btn btn-primary" onclick="openFabricModal()">+ Nouveau tissu</button>
+        </div>
+      </div>
+      <div class="cards-grid" style="grid-template-columns:1fr;margin-bottom:26px">
+        <div class="card" style="flex-direction:row;align-items:center;gap:20px;padding:20px">
+          <div class="photo-preview" style="width:120px;height:120px" id="brand-photo-prev">🖼️</div>
+          <div style="flex:1">
+            <div class="card-cat">Photo de marque</div>
+            <div class="card-name" style="font-size:22px">Votre photo / logo</div>
+            <div class="card-desc" style="margin-bottom:8px">Affichée sur la page d'accueil (section « Mon histoire »).</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <input type="file" id="brand-photo-file" accept="image/*" class="hidden" onchange="uploadBrandPhoto(event)">
+              <button class="btn btn-soft btn-sm" onclick="document.getElementById('brand-photo-file').click()">📷 Changer la photo</button>
+              <button class="btn btn-danger btn-sm" onclick="setBrandPhoto('')">Supprimer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <div class="search-wrap"><input id="fabric-search" placeholder="Rechercher un tissu…" oninput="renderFabrics()"></div>
+      </div>
+      <div class="cards-grid" id="fabrics-grid"></div>
+    </section>
+
+    <!-- ══ COMMANDES ══ -->
+    <section id="view-commandes" class="hidden">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Commandes</div>
+          <div class="page-sub">Suivez et gérez les commandes de vos clientes.</div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <div class="search-wrap"><input id="order-search" placeholder="Rechercher (nom, n°, téléphone)…" oninput="renderOrders()"></div>
+        <div id="order-filters" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+      </div>
+      <div class="order-list" id="orders-list"></div>
+    </section>
+
+    <!-- ══ RÉGLAGES ══ -->
+    <section id="view-reglages" class="hidden">
+      <div class="page-head">
+        <div>
+          <div class="page-title">Réglages</div>
+          <div class="page-sub">Sécurité et informations du compte.</div>
+        </div>
+      </div>
+      <div class="settings-card">
+        <h3>🔑 Changer le mot de passe</h3>
+        <p class="desc">Utilisez un mot de passe d'au moins 8 caractères pour protéger votre espace admin.</p>
+        <div class="form-group"><label>Mot de passe actuel</label><input type="password" id="pw-old"></div>
+        <div class="form-group"><label>Nouveau mot de passe</label><input type="password" id="pw-new"></div>
+        <div class="form-group"><label>Confirmer le nouveau mot de passe</label><input type="password" id="pw-confirm"></div>
+        <button class="btn btn-primary" onclick="changePassword()">Mettre à jour</button>
+      </div>
+      <div class="settings-card">
+        <h3>ℹ️ Informations</h3>
+        <p class="desc">Ressources utiles pour votre boutique.</p>
+        <div class="info-line"><span>Site vitrine</span><b>jaysolution07.github.io/DouceGrace.fr</b></div>
+        <div class="info-line"><span>Base de données</span><b>Google Sheets « Douce Grâce — Boutique »</b></div>
+        <div class="info-line"><span>Photos</span><b>Dossier Drive « DouceGrâce_Photos »</b></div>
+        <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-outline btn-sm" onclick="window.open('https://jaysolution07.github.io/DouceGrace.fr/','_blank')">🌐 Ouvrir le site</button>
+          <button class="btn btn-outline btn-sm" onclick="window.open('https://docs.google.com/spreadsheets/d/1GI_woVjvYA7QjF7q0CktKCFbrwUUhhkWGXZ0stNbzRI','_blank')">📄 Ouvrir la base</button>
+        </div>
+      </div>
+      <div class="settings-card">
+        <h3>🚪 Session</h3>
+        <p class="desc">Déconnectez-vous de l'espace admin.</p>
+        <button class="btn btn-danger" onclick="doLogout()">Se déconnecter</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ══════════ MODAL PRODUIT ══════════ -->
+<div class="modal-overlay" id="product-modal" onclick="if(event.target===this)closeProductModal()">
+  <div class="modal lg">
+    <button class="modal-close" onclick="closeProductModal()">✕</button>
+    <h2 id="product-modal-title">Nouvelle création</h2>
+    <div class="modal-sub">Renseignez les informations du produit affiché en boutique.</div>
+    <input type="hidden" id="p-id">
+    <div class="form-row">
+      <div class="form-group"><label>Nom *</label><input id="p-name" placeholder="Ex : Robe d'été"></div>
+      <div class="form-group"><label>Catégorie</label><input id="p-cat" list="cat-list" placeholder="Ex : Robes"><datalist id="cat-list"></datalist></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Prix (€) *</label><input id="p-price" type="number" step="0.01" min="0" placeholder="0.00"></div>
+      <div class="form-group"><label>Emoji</label><input id="p-emoji" placeholder="🧵" maxlength="4"></div>
+    </div>
+    <div class="form-group">
+      <label>Stock (quantité disponible)</label>
+      <input id="p-stock" type="number" min="0" step="1" placeholder="0">
+      <div class="hint">0 = rupture de stock · à 3 ou moins, le site affiche « Plus que X en stock ».<br>Le stock diminue automatiquement à chaque commande passée sur le site.</div>
+    </div>
+    <div class="form-group"><label>Description</label><textarea id="p-desc" rows="3" placeholder="Décrivez votre création…"></textarea></div>
+
+    <div class="form-group">
+    <div class="form-group">
+      <label>Photos de la création <span class="hint-inline">(jusqu'à 4 — la 1ʳᵉ est la photo principale)</span></label>
+      <div class="photos-grid">
+        <div class="photo-slot">
+          <div class="photo-preview" id="p-photo-preview-0">📷</div>
+          <div class="photo-slot-actions">
+            <input type="file" id="p-photo-file-0" accept="image/*" class="hidden" onchange="handleProductFile(event, 0)">
+            <button class="btn btn-soft btn-sm" onclick="document.getElementById('p-photo-file-0').click()" title="Choisir une photo">📷</button>
+            <button class="btn btn-outline btn-sm" onclick="toggleUrlInput('p', 0)" title="Coller une URL">🔗</button>
+            <button class="btn btn-danger btn-sm" onclick="clearProductImage(0)" title="Retirer cette photo">✕</button>
+          </div>
+          <input id="p-url-input-0" class="hidden" style="margin-top:8px;font-size:12px" placeholder="Collez le lien de l'image…" onchange="setImageFromUrl('p', 0, this.value)">
+        </div>
+        <div class="photo-slot">
+          <div class="photo-preview" id="p-photo-preview-1">📷</div>
+          <div class="photo-slot-actions">
+            <input type="file" id="p-photo-file-1" accept="image/*" class="hidden" onchange="handleProductFile(event, 1)">
+            <button class="btn btn-soft btn-sm" onclick="document.getElementById('p-photo-file-1').click()" title="Choisir une photo">📷</button>
+            <button class="btn btn-outline btn-sm" onclick="toggleUrlInput('p', 1)" title="Coller une URL">🔗</button>
+            <button class="btn btn-danger btn-sm" onclick="clearProductImage(1)" title="Retirer cette photo">✕</button>
+          </div>
+          <input id="p-url-input-1" class="hidden" style="margin-top:8px;font-size:12px" placeholder="Collez le lien de l'image…" onchange="setImageFromUrl('p', 1, this.value)">
+        </div>
+        <div class="photo-slot">
+          <div class="photo-preview" id="p-photo-preview-2">📷</div>
+          <div class="photo-slot-actions">
+            <input type="file" id="p-photo-file-2" accept="image/*" class="hidden" onchange="handleProductFile(event, 2)">
+            <button class="btn btn-soft btn-sm" onclick="document.getElementById('p-photo-file-2').click()" title="Choisir une photo">📷</button>
+            <button class="btn btn-outline btn-sm" onclick="toggleUrlInput('p', 2)" title="Coller une URL">🔗</button>
+            <button class="btn btn-danger btn-sm" onclick="clearProductImage(2)" title="Retirer cette photo">✕</button>
+          </div>
+          <input id="p-url-input-2" class="hidden" style="margin-top:8px;font-size:12px" placeholder="Collez le lien de l'image…" onchange="setImageFromUrl('p', 2, this.value)">
+        </div>
+        <div class="photo-slot">
+          <div class="photo-preview" id="p-photo-preview-3">📷</div>
+          <div class="photo-slot-actions">
+            <input type="file" id="p-photo-file-3" accept="image/*" class="hidden" onchange="handleProductFile(event, 3)">
+            <button class="btn btn-soft btn-sm" onclick="document.getElementById('p-photo-file-3').click()" title="Choisir une photo">📷</button>
+            <button class="btn btn-outline btn-sm" onclick="toggleUrlInput('p', 3)" title="Coller une URL">🔗</button>
+            <button class="btn btn-danger btn-sm" onclick="clearProductImage(3)" title="Retirer cette photo">✕</button>
+          </div>
+          <input id="p-url-input-3" class="hidden" style="margin-top:8px;font-size:12px" placeholder="Collez le lien de l'image…" onchange="setImageFromUrl('p', 3, this.value)">
+        </div>
+      </div>
+      <div class="hint">Jusqu'à 4 photos — la 1ʳᵉ est la photo principale en boutique. Les photos sont stockées sur votre Google Drive.</div>
+    </div>
+
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="check-row"><input type="checkbox" id="p-custom"> Tissu au choix du client</label>
+        <input id="p-fabrics" placeholder="Ex : Coton, Lin, Wax" onfocus="suggestFabrics()">
+        <div class="hint" id="p-fabrics-hint">Noms des tissus séparés par des virgules.</div>
+        <div id="p-fabric-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+      </div>
+      <div class="form-group">
+        <label class="check-row"><input type="checkbox" id="p-active" checked> En ligne sur la boutique</label>
+        <label class="check-row"><input type="checkbox" id="p-promo-active"> Promo active</label>
+      </div>
+    </div>
+
+    <div class="form-row" id="promo-row">
+      <div class="form-group"><label>Code promo</label><input id="p-promo-code" placeholder="Ex : MLBP10" style="text-transform:uppercase"></div>
+      <div class="form-group"><label>Réduction (%)</label><input id="p-promo-reduc" type="number" min="0" max="100" placeholder="10"></div>
+    </div>
+    <div class="form-group"><label>Valable à partir de (€ d'achat)</label><input id="p-promo-min" type="number" min="0" placeholder="0"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="save-product-btn" onclick="saveProduct()">💾 Enregistrer</button>
+      <button class="btn btn-soft" onclick="closeProductModal()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MODAL TISSU ══════════ -->
+<div class="modal-overlay" id="fabric-modal" onclick="if(event.target===this)closeFabricModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeFabricModal()">✕</button>
+    <h2 id="fabric-modal-title">Nouveau tissu</h2>
+    <div class="modal-sub">Ajoutez un tissu disponible sur la page « Tissus ».</div>
+    <input type="hidden" id="f-id">
+    <div class="form-group"><label>Nom *</label><input id="f-name" placeholder="Ex : Wax Indigo"></div>
+    <div class="form-group"><label>Matière / catégorie</label><input id="f-cat" placeholder="Ex : Coton"></div>
+    <div class="form-group"><label>Description</label><textarea id="f-desc" rows="3" placeholder="Décrivez le tissu…"></textarea></div>
+    <div class="form-group">
+      <label>Photo du tissu</label>
+      <div class="photo-picker">
+        <div class="photo-preview" id="f-photo-preview">📷</div>
+        <div class="photo-controls">
+          <input type="file" id="f-photo-file" accept="image/*" class="hidden" onchange="handleFabricFile(event)">
+          <button class="btn btn-soft" onclick="document.getElementById('f-photo-file').click()">📷 Choisir une photo</button>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn btn-outline btn-sm" style="flex:1" onclick="toggleUrlInput('f')">🔗 Coller une URL</button>
+            <button class="btn btn-danger btn-sm" onclick="clearFabricImage()">Retirer</button>
+          </div>
+          <input id="f-url-input" class="hidden" style="margin-top:10px" placeholder="Collez le lien de l'image…" onchange="setImageFromUrl('f', this.value)">
+        </div>
+      </div>
+    </div>
+    <label class="check-row"><input type="checkbox" id="f-active" checked> Disponible (affiché sur le site)</label>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="save-fabric-btn" onclick="saveFabric()">💾 Enregistrer</button>
+      <button class="btn btn-soft" onclick="closeFabricModal()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MODAL DÉTAIL COMMANDE ══════════ -->
+<div class="modal-overlay" id="order-modal" onclick="if(event.target===this)closeOrderModal()">
+  <div class="modal lg">
+    <button class="modal-close" onclick="closeOrderModal()">✕</button>
+    <h2 id="om-ref">Commande</h2>
+    <div class="modal-sub" id="om-client"></div>
+    <div class="detail-grid" style="margin-bottom:18px">
+      <div class="detail-box">
+        <h4>👤 Cliente</h4>
+        <div class="detail-line"><b id="om-name"></b></div>
+        <div class="detail-line" id="om-phone"></div>
+        <div class="detail-line" id="om-email"></div>
+        <div class="detail-line" id="om-date"></div>
+      </div>
+      <div class="detail-box">
+        <h4>🛒 Articles</h4>
+        <div class="articles-pre" id="om-articles"></div>
+        <div class="detail-line" style="margin-top:10px;font-size:16px"><b id="om-total"></b></div>
+        <div class="detail-line" id="om-promo"></div>
+      </div>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-box">
+        <h4>📝 Suivi</h4>
+        <div class="form-group"><label>Statut</label>
+          <select id="om-statut">
+            <option value="A traiter">⏳ A traiter</option>
+            <option value="Traiter">✅ Traiter</option>
+            <option value="En cours">👩‍🎨 En cours de réalisation</option>
+            <option value="Expédiée">📦 Expédiée</option>
+            <option value="Livrée">🎉 Livrée</option>
+            <option value="Annulée">❌ Annulée</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Date proposée</label><input type="date" id="om-date-proposee"></div>
+        <div class="form-group"><label>Prix demandé (€)</label><input type="number" id="om-prix-demande" step="0.01"></div>
+      </div>
+      <div class="detail-box">
+        <h4>💬 Remarques / mesures</h4>
+        <div class="detail-line" id="om-note" style="white-space:pre-wrap;background:var(--beige);padding:12px;border-radius:10px"></div>
+        <div class="detail-line" style="margin-top:10px"><b>Remarques internes</b></div>
+        <textarea id="om-remarques" rows="3" style="width:100%;padding:10px;border:1.5px solid var(--beige-mid);border-radius:10px;font-size:13px"></textarea>
+        <div class="detail-line" style="margin-top:10px"><b>Date souhaitée :</b> <span id="om-date-souhaitee"></span></div>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding:12px 16px;background:var(--beige-light);border:1px solid var(--beige-mid);border-radius:12px;font-size:12px;color:var(--text-light);line-height:1.6;">
+      📧 À chaque enregistrement d'un changement de <b>statut</b>, de <b>date proposée</b> ou de <b>prix demandé</b>,
+      un e-mail récapitulatif est envoyé automatiquement à la cliente.
+    </div>
+    <div class="order-save-row">
+      <button class="btn btn-soft" onclick="closeOrderModal()">Fermer</button>
+      <button class="btn btn-primary" onclick="saveOrderChanges()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MODAL CONFIRMATION ══════════ -->
+<div class="modal-overlay" id="confirm-modal" onclick="if(event.target===this)closeConfirm()">
+  <div class="modal" style="max-width:400px;text-align:center">
+    <div style="font-size:44px;margin-bottom:10px">🗑️</div>
+    <h2 style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--navy);margin-bottom:8px" id="confirm-title">Supprimer ?</h2>
+    <p style="font-size:14px;color:var(--text-light);margin-bottom:22px" id="confirm-text">Cette action est définitive.</p>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="confirm-yes" onclick="confirmAction()">Oui, supprimer</button>
+      <button class="btn btn-soft" onclick="closeConfirm()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  CONFIG — URL de la web app Apps Script (identique à la boutique)
+// ══════════════════════════════════════════════════════════════
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzC2zM9G4rgXWK5YyFpIw4b6xQDciw_FbMvZ3Sq_oefyeXOGTHBIh-xzUW-f4bc4NLw/exec";
+
+let TOKEN = localStorage.getItem('dg_admin_token') || '';
+let PRODUCTS = [];
+let FABRICS = [];
+let ORDERS = [];
+let BRAND_PHOTO = '';
+let activeCatFilter = '';
+let activeStatusFilter = '';
+let pendingImages = [null, null, null, null]; // dataUrls prêts à uploader (produit, jusqu'à 4)
+let pendingFabricImage = null;
+let removeImages = [false, false, false, false]; // l'utilisateur veut retirer chaque photo
+let removeFabricImg = false;
+let confirmCb = null;
+
+// ── APPEL API (POST lisible : Content-Type text/plain = pas de preflight CORS) ──
+async function api(action, data = {}) {
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action, token: TOKEN, ...data })
+  });
+  return res.json();
+}
+
+// ── LECTURES PUBLIQUES (GET) ──
+async function fetchJson(action) {
+  const res = await fetch(GAS_URL + "?action=" + action);
+  return res.json();
+}
+
+// ══════════ TOAST ══════════
+let toastTimer = null;
+function toast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = '', 3200);
+}
+
+// ══════════ CONNEXION ══════════
+async function doLogin() {
+  const pwd = document.getElementById('login-password').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+  if (!pwd) { err.textContent = 'Veuillez saisir votre mot de passe.'; return; }
+  btn.disabled = true; btn.textContent = 'Connexion…';
+  err.textContent = '';
+  try {
+    const r = await api('adminLogin', { password: pwd });
+    if (r.success && r.token) {
+      TOKEN = r.token;
+      localStorage.setItem('dg_admin_token', r.token);
+      enterApp();
+    } else {
+      err.textContent = r.error || 'Mot de passe incorrect.';
+    }
+  } catch (e) {
+    err.textContent = 'Impossible de joindre le serveur. Vérifiez votre connexion.';
+  }
+  btn.disabled = false; btn.textContent = 'Se connecter';
+}
+
+function doLogout() {
+  if (TOKEN) api('adminLogout').catch(() => {});
+  TOKEN = '';
+  localStorage.removeItem('dg_admin_token');
+  location.reload();
+}
+
+function enterApp() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  refreshAll();
+}
+
+// ══════════ NAVIGATION ══════════
+function showView(name) {
+  document.querySelectorAll('.main section').forEach(s => s.classList.add('hidden'));
+  document.getElementById('view-' + name).classList.remove('hidden');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === name));
+  if (name === 'produits') renderProducts();
+  if (name === 'tissus') renderFabrics();
+  if (name === 'commandes') renderOrders();
+  if (name === 'dashboard') refreshAll();
+}
+
+// ══════════ CHARGEMENT ══════════
+async function refreshAll() {
+  try {
+    const [p, f, o] = await Promise.all([
+      fetchJson('getProducts'),
+      fetchJson('getFabrics'),
+      fetchJson('getOrders')
+    ]);
+    PRODUCTS = p.apps || [];
+    FABRICS = f.fabrics || [];
+    BRAND_PHOTO = f.brandPhoto || '';
+    ORDERS = o || [];
+    renderStats();
+    renderProducts();
+    renderFabrics();
+    renderOrders();
+    renderDashOrders();
+    renderBrandPhoto();
+    fillCatDatalist();
+    buildFilters();
+    buildOrderFilters();
+  } catch (e) {
+    toast('Erreur de chargement des données.', 'err');
+  }
+}
+
+function renderStats() {
+  const actifs = PRODUCTS.filter(p => p.active).length;
+  const aTraiter = ORDERS.filter(o => { const st = String(o.statut || '').trim().toLowerCase(); return st === 'a traiter' || st === 'traiter'; }).length;
+  document.getElementById('st-produits').textContent = actifs;
+  document.getElementById('st-tissus').textContent = FABRICS.filter(f => f.active).length;
+  document.getElementById('st-commandes').textContent = ORDERS.length;
+  document.getElementById('st-a-traiter').textContent = aTraiter;
+}
+
+function fillCatDatalist() {
+  const cats = [...new Set(PRODUCTS.map(p => p.cat).filter(Boolean))];
+  document.getElementById('cat-list').innerHTML = cats.map(c => `<option value="${esc(c)}">`).join('');
+}
+
+// ══════════ CRÉATIONS ══════════
+function buildFilters() {
+  const cats = [...new Set(PRODUCTS.map(p => p.cat).filter(Boolean))];
+  const wrap = document.getElementById('prod-filters');
+  wrap.innerHTML = `<button class="chip active" onclick="setCatFilter('')">Tout</button>` +
+    cats.map(c => `<button class="chip" onclick="setCatFilter('${escAttr(c)}')">${esc(c)}</button>`).join('');
+}
+
+function setCatFilter(cat) {
+  activeCatFilter = cat;
+  document.querySelectorAll('#prod-filters .chip').forEach(b => b.classList.toggle('active', b.textContent === (cat || 'Tout')));
+  renderProducts();
+}
+
+function adminStockLabel(p) {
+  if (p.stock === null || p.stock === undefined) return '';
+  if (p.stock <= 0) return '<div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--red);margin-bottom:10px;">❌ Rupture de stock</div>';
+  if (p.stock <= 3) return '<div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#b8860b;margin-bottom:10px;">⚠️ Plus que ' + p.stock + ' en stock</div>';
+  return '<div style="font-size:11px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--green);margin-bottom:10px;">✓ ' + p.stock + ' en stock</div>';
+}
+function renderProducts() {
+  const q = (document.getElementById('prod-search').value || '').toLowerCase();
+  const filtered = PRODUCTS.filter(p =>
+    (!activeCatFilter || p.cat === activeCatFilter) &&
+    (!q || p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q))
+  );
+  const grid = document.getElementById('products-grid');
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty-state"><div class="e-ico">🌸</div><p>Aucune création pour le moment.<br>Cliquez sur « Nouvelle création » pour commencer.</p></div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map(p => `
+    <div class="card ${p.active ? '' : 'off-card'}">
+      <div class="card-img">
+        ${p.image ? `<img src="${esc(imgSrc(p.image))}" alt="${esc(p.name)}" onerror="imgFail(this,'${esc(p.emoji || '🧵')}')">` : `<span class="emoji-ph">${esc(p.emoji || '🧵')}</span>`}
+        ${(p.images && p.images.length > 1) ? '<span class="card-badge multi">📷 ' + p.images.length + '</span>' : ''}
+        ${p.active ? (p.custom ? '<span class="card-badge">Tissu au choix</span>' : '') : '<span class="card-badge off">Masquée</span>'}
+      </div>
+      <div class="card-body">
+        <div class="card-cat">${esc(p.cat || 'Création')}</div>
+        <div class="card-name">${esc(p.name)}</div>
+        <div class="card-desc">${esc(p.desc || '')}</div>
+        <div class="card-price">${p.price} €</div>
+        ${adminStockLabel(p)}
+        <div class="toggle-row">
+          <label class="switch"><input type="checkbox" ${p.active ? 'checked' : ''} onchange="toggleProduct('${escAttr(p.id)}', this.checked)"><span class="slider"></span></label>
+          ${p.active ? 'En ligne' : 'Masquée'}
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-soft" onclick="openProductModal('${escAttr(p.id)}')">✏️ Modifier</button>
+          <button class="btn btn-danger" onclick="askDelete('produit','${escAttr(p.id)}','${escAttr(p.name)}')">🗑</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleProduct(id, active) {
+  const p = PRODUCTS.find(x => String(x.id) === String(id));
+  const prev = p ? p.active : null;
+  if (p) {
+    p.active = active;
+    p.outOfStock = !active || (p.stock !== null && p.stock <= 0);
+  }
+  renderProducts();
+  api('adminToggleProduct', { id, active }).then(r => {
+    if (r.success) {
+      toast(active ? 'Création remise en ligne ✨' : 'Création masquée du site', 'ok');
+    } else {
+      if (p && prev !== null) { p.active = prev; p.outOfStock = !prev || (p.stock !== null && p.stock <= 0); }
+      renderProducts();
+      toast(r.error || 'Erreur', 'err');
+    }
+  }).catch(() => {
+    if (p && prev !== null) { p.active = prev; p.outOfStock = !prev || (p.stock !== null && p.stock <= 0); }
+    renderProducts();
+    toast('Erreur réseau, modification annulée', 'err');
+  });
+}
+// ── MODAL PRODUIT ──
+function openProductModal(id) {
+  pendingImages = [null, null, null, null];
+  removeImages = [false, false, false, false];
+  setSaveBusy('save-product-btn', false);
+  const m = document.getElementById('product-modal');
+  document.getElementById('product-modal-title').textContent = id ? 'Modifier la création' : 'Nouvelle création';
+  document.getElementById('p-id').value = id || '';
+  const p = PRODUCTS.find(x => String(x.id) === String(id));
+  document.getElementById('p-name').value = p ? p.name : '';
+  document.getElementById('p-cat').value = p ? p.cat : '';
+  document.getElementById('p-price').value = p ? p.price : '';
+  document.getElementById('p-emoji').value = p ? p.emoji : '🧵';
+  document.getElementById('p-stock').value = (p && p.stock !== null && p.stock !== undefined) ? p.stock : '';
+  document.getElementById('p-desc').value = p ? p.desc : '';
+  document.getElementById('p-custom').checked = p ? p.custom : false;
+  document.getElementById('p-fabrics').value = p && p.fabrics ? p.fabrics.join(', ') : '';
+  document.getElementById('p-active').checked = p ? p.active : true;
+  document.getElementById('p-promo-active').checked = p ? p.promoActive : false;
+  document.getElementById('p-promo-code').value = p ? (p.promoCode || '') : '';
+  document.getElementById('p-promo-reduc').value = p ? (p.promoReduction || '') : '';
+  document.getElementById('p-promo-min').value = p ? (p.promoMin || '') : '';
+  const imgs = (p && p.images && p.images.length) ? p.images : (p && p.image ? [p.image] : []);
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('p-url-input-' + i).value = '';
+    document.getElementById('p-url-input-' + i).classList.add('hidden');
+    setProductPreview(i, imgs[i] || '');
+  }
+  m.classList.add('active');
+  suggestFabrics();
+}
+
+function closeProductModal() {
+  document.getElementById('product-modal').classList.remove('active');
+  pendingImages = [null, null, null, null];
+  removeImages = [false, false, false, false];
+}
+
+function setProductPreview(i, url) {
+  const box = document.getElementById('p-photo-preview-' + i);
+  box.innerHTML = url ? `<img src="${esc(imgSrc(url))}" onerror="this.style.display='none'">` : '📷';
+}
+
+function handleProductFile(ev, i) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  compressImage(file, (dataUrl) => {
+    removeImages[i] = false;
+    pendingImages[i] = dataUrl;
+    setProductPreview(i, dataUrl);
+    toast('Photo ' + (i + 1) + ' prête — elle sera enregistrée sur Drive.', 'ok');
+  });
+  ev.target.value = '';
+}
+
+function clearProductImage(i) {
+  removeImages[i] = true;
+  pendingImages[i] = null;
+  document.getElementById('p-url-input-' + i).value = '';
+  document.getElementById('p-photo-file-' + i).value = '';
+  setProductPreview(i, '');
+}
+
+// Convertit toute URL Google Drive en URL d'image directe (lh3 = sans redirection)
+function imgSrc(url) {
+  url = String(url || '').trim();
+  if (!url) return '';
+  let m = url.match(new RegExp('/file/d/([a-zA-Z0-9_-]+)'));
+  if (m) return 'https://lh3.googleusercontent.com/d/' + m[1];
+  m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m) return 'https://lh3.googleusercontent.com/d/' + m[1];
+  return url;
+}
+// Secours : si l'image ne charge pas, on affiche l'emoji à la place
+function imgFail(img, emoji) {
+  img.onerror = null;
+  const ph = document.createElement('span');
+  ph.className = 'emoji-ph';
+  ph.textContent = emoji || img.dataset.emoji || '🧵';
+  img.replaceWith(ph);
+}
+
+function setImageFromUrl(which, a, b) {
+  if (which === 'p') {
+    const i = a, url = b || '';
+    pendingImages[i] = null;
+    removeImages[i] = false;
+    document.getElementById('p-photo-file-' + i).value = '';
+    setProductPreview(i, url);
+  } else if (which === 'f') {
+    const url = a || '';
+    pendingFabricImage = null;
+    removeFabricImg = false;
+    document.getElementById('f-photo-file').value = '';
+    document.getElementById('f-photo-preview').innerHTML = url ? `<img src="${esc(imgSrc(url))}" onerror="this.style.display='none'">` : '📷';
+  }
+}
+
+function toggleUrlInput(which, idx) {
+  const el = document.getElementById(which === 'p' ? ('p-url-input-' + idx) : 'f-url-input');
+  el.classList.toggle('hidden');
+  if (!el.classList.contains('hidden')) el.focus();
+}
+
+function setSaveBusy(btnId, busy) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  if (busy) { btn.classList.add('busy'); btn.innerHTML = '<span class="spinner"></span>Enregistrement…'; }
+  else { btn.classList.remove('busy'); btn.textContent = '💾 Enregistrer'; }
+}
+
+async function saveProduct() {
+  const id = document.getElementById('p-id').value;
+  const name = document.getElementById('p-name').value.trim();
+  const price = parseFloat(document.getElementById('p-price').value);
+  if (!name) { toast('Le nom est obligatoire.', 'err'); return; }
+  if (isNaN(price) || price < 0) { toast('Indiquez un prix valide.', 'err'); return; }
+
+  // 1) upload des photos (jusqu'à 4)
+  const images = ['', '', '', ''];
+  const existing = PRODUCTS.find(x => String(x.id) === String(id));
+  const existingImgs = (existing && existing.images && existing.images.length)
+    ? existing.images
+    : (existing && existing.image ? [existing.image] : []);
+  for (let i = 0; i < 4; i++) {
+    if (removeImages[i]) { images[i] = ''; continue; }
+    if (pendingImages[i]) {
+      setSaveBusy('save-product-btn', true);
+      toast('Envoi de la photo ' + (i + 1) + ' sur Google Drive…');
+      try {
+        const up = await api('adminUploadImage', { dataUrl: pendingImages[i] });
+        if (!up.success) throw new Error(up.error);
+        images[i] = up.url;
+      } catch (e) {
+        setSaveBusy('save-product-btn', false);
+        toast('Échec de l\'upload photo : ' + e.message, 'err');
+        return;
+      }
+    } else {
+      const urlVal = document.getElementById('p-url-input-' + i).value.trim();
+      images[i] = urlVal || (existingImgs[i] || '');
+    }
+  }
+  setSaveBusy('save-product-btn', false);
+  // photos retirées ou remplacées → à supprimer du Drive après sauvegarde
+  const deleteImages = [];
+  (existingImgs || []).forEach(u => {
+    if (u && images.indexOf(u) === -1 && deleteImages.indexOf(u) === -1) deleteImages.push(u);
+  });
+  const product = {
+    id, name, cat: document.getElementById('p-cat').value.trim(),
+    price,
+    emoji: document.getElementById('p-emoji').value.trim() || '🧵',
+    stock: document.getElementById('p-stock').value.trim() === '' ? null : Math.max(0, parseInt(document.getElementById('p-stock').value, 10) || 0),
+    desc: document.getElementById('p-desc').value.trim(),
+    image: images[0] || '',
+    images,
+    custom: document.getElementById('p-custom').checked,
+    fabrics: document.getElementById('p-fabrics').value.split(',').map(s => s.trim()).filter(Boolean),
+    active: document.getElementById('p-active').checked,
+    promoCode: document.getElementById('p-promo-code').value.trim().toUpperCase(),
+    promoReduction: parseFloat(document.getElementById('p-promo-reduc').value) || 0,
+    promoMin: parseFloat(document.getElementById('p-promo-min').value) || 0,
+    promoActive: document.getElementById('p-promo-active').checked
+  };
+
+  // ── Mise à jour optimiste de l'interface ──
+  const isNew = !id;
+  const tempId = isNew ? 'tmp-' + Date.now() : id;
+  const optimisticItem = {
+    id: tempId, name: product.name, cat: product.cat, price: product.price,
+    emoji: product.emoji, desc: product.desc, image: product.image, images: product.images,
+    custom: product.custom, fabrics: product.fabrics, active: product.active,
+    stock: product.stock,
+    promoCode: product.promoCode, promoReduction: product.promoReduction,
+    promoMin: product.promoMin, promoActive: product.promoActive,
+    outOfStock: !product.active || (product.stock !== null && product.stock <= 0)
+  };
+  const li = PRODUCTS.findIndex(x => String(x.id) === String(id));
+  const origIdx = li;
+  if (li >= 0) PRODUCTS[li] = optimisticItem; else PRODUCTS.push(optimisticItem);
+  closeProductModal();
+  renderProducts(); renderStats(); buildFilters(); fillCatDatalist();
+
+  try {
+    const r = await api('adminSaveProduct', { product, deleteImages });
+    if (r && r.success) {
+      const ti = PRODUCTS.findIndex(x => String(x.id) === String(tempId));
+      if (ti >= 0) PRODUCTS[ti].id = r.id;
+      renderProducts(); renderStats(); buildFilters(); fillCatDatalist();
+      toast(id ? 'Création mise à jour ✅' : 'Création ajoutée à la boutique 🎉', 'ok');
+    } else {
+      await reconcileProducts(tempId, existing, isNew, origIdx, optimisticItem, (r && r.error) || 'Erreur');
+    }
+  } catch (e) {
+    await reconcileProducts(tempId, existing, isNew, origIdx, optimisticItem, 'Erreur serveur : ' + e.message);
+  }
+}
+
+function rollbackProduct(tempId, existing, isNew, origIdx) {
+  const ri = PRODUCTS.findIndex(x => String(x.id) === String(tempId));
+  if (ri >= 0) PRODUCTS.splice(ri, 1);
+  if (!isNew && existing) PRODUCTS.splice(Math.min(origIdx || 0, PRODUCTS.length), 0, existing);
+  renderProducts(); renderStats(); buildFilters(); fillCatDatalist();
+}
+
+// Resynchronise la liste avec la vérité du backend : si la création/édition a bien été
+// enregistrée malgré une réponse d'erreur, la carte optimiste reste affichée (avec son vrai ID).
+async function reconcileProducts(tempId, existing, isNew, origIdx, optimisticItem, errMsg) {
+  try {
+    const p = await fetchJson('getProducts');
+    PRODUCTS = p.apps || [];
+    renderProducts(); renderStats(); buildFilters(); fillCatDatalist();
+    const t = optimisticItem || {};
+    let saved = false;
+    if (existing) {
+      // Édition : on retrouve l'item par son ID et on compare les champs modifiables
+      const fresh = PRODUCTS.find(x => String(x.id) === String(existing.id));
+      saved = !!(fresh &&
+        String(fresh.name || '').trim().toLowerCase() === String(t.name || '').trim().toLowerCase() &&
+        String(fresh.cat || '').trim().toLowerCase() === String(t.cat || '').trim().toLowerCase() &&
+        (Number(fresh.price) || 0) === (Number(t.price) || 0) &&
+        String(fresh.desc || '').trim() === String(t.desc || '').trim() &&
+        !!fresh.active === !!t.active &&
+        !!fresh.custom === !!t.custom &&
+        (fresh.stock === t.stock || Number(fresh.stock) === Number(t.stock)));
+    } else {
+      // Création : l'ID serveur est inconnu → on matche par nom + prix
+      const n = String(t.name || '').trim().toLowerCase();
+      saved = !!n && PRODUCTS.some(x =>
+        String(x.name || '').trim().toLowerCase() === n && (Number(x.price) || 0) === (Number(t.price) || 0));
+    }
+    toast(saved ? 'Enregistrement confirmé par le serveur ✅' : errMsg, saved ? 'ok' : 'err');
+  } catch (e2) {
+    rollbackProduct(tempId, existing, isNew, origIdx);
+    toast(errMsg, 'err');
+  }
+}
+// ══════════ TISSUS ══════════
+function renderFabrics() {
+  const q = (document.getElementById('fabric-search').value || '').toLowerCase();
+  const filtered = FABRICS.filter(f => !q || f.name.toLowerCase().includes(q) || f.desc.toLowerCase().includes(q));
+  const grid = document.getElementById('fabrics-grid');
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty-state"><div class="e-ico">🧵</div><p>Aucun tissu pour le moment.<br>Cliquez sur « Nouveau tissu » pour en ajouter.</p></div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map(f => `
+    <div class="card ${f.active ? '' : 'off-card'}">
+      <div class="card-img">
+        ${f.image ? `<img src="${esc(f.image)}" alt="${esc(f.name)}">` : '<span class="emoji-ph">🧵</span>'}
+        ${!f.active ? '<span class="card-badge off">Indisponible</span>' : ''}
+      </div>
+      <div class="card-body">
+        <div class="card-cat">${esc(f.cat || 'Tissu')}</div>
+        <div class="card-name">${esc(f.name)}</div>
+        <div class="card-desc">${esc(f.desc || '')}</div>
+        <div class="toggle-row">
+          <label class="switch"><input type="checkbox" ${f.active ? 'checked' : ''} onchange="toggleFabric('${escAttr(f.id)}', this.checked)"><span class="slider"></span></label>
+          ${f.active ? 'Disponible' : 'Indisponible'}
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-soft" onclick="openFabricModal('${escAttr(f.id)}')">✏️ Modifier</button>
+          <button class="btn btn-danger" onclick="askDelete('tissu','${escAttr(f.id)}','${escAttr(f.name)}')">🗑</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleFabric(id, active) {
+  const f = FABRICS.find(x => String(x.id) === String(id));
+  const prev = f ? f.active : null;
+  if (f) f.active = active;
+  renderFabrics();
+  api('adminToggleFabric', { id, active }).then(r => {
+    if (r.success) {
+      toast(active ? 'Tissu rendu disponible ✅' : 'Tissu marqué indisponible', 'ok');
+    } else {
+      if (f && prev !== null) f.active = prev;
+      renderFabrics();
+      toast(r.error || 'Erreur', 'err');
+    }
+  }).catch(() => {
+    if (f && prev !== null) f.active = prev;
+    renderFabrics();
+    toast('Erreur réseau, modification annulée', 'err');
+  });
+}
+function renderBrandPhoto() {
+  const box = document.getElementById('brand-photo-prev');
+  box.innerHTML = BRAND_PHOTO ? `<img src="${esc(imgSrc(BRAND_PHOTO))}" onerror="this.style.display='none'">` : '🖼️';
+}
+
+async function uploadBrandPhoto(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  compressImage(file, async (dataUrl) => {
+    toast('Envoi de la photo de marque…');
+    try {
+      const up = await api('adminUploadImage', { dataUrl });
+      if (!up.success) throw new Error(up.error);
+      await setBrandPhoto(up.url);
+      toast('Photo de marque mise à jour 🖼️', 'ok');
+    } catch (e) {
+      toast('Échec : ' + e.message, 'err');
+    }
+  });
+}
+
+async function setBrandPhoto(url) {
+  const r = await api('adminSetBrandPhoto', { url });
+  if (r.success) { BRAND_PHOTO = url; renderBrandPhoto(); }
+  else toast(r.error || 'Erreur', 'err');
+}
+
+// ── MODAL TISSU ──
+function openFabricModal(id) {
+  pendingFabricImage = null;
+  removeFabricImg = false;
+  setSaveBusy('save-fabric-btn', false);
+  document.getElementById('fabric-modal-title').textContent = id ? 'Modifier le tissu' : 'Nouveau tissu';
+  document.getElementById('f-id').value = id || '';
+  const f = FABRICS.find(x => String(x.id) === String(id));
+  document.getElementById('f-name').value = f ? f.name : '';
+  document.getElementById('f-cat').value = f ? f.cat : '';
+  document.getElementById('f-desc').value = f ? f.desc : '';
+  document.getElementById('f-active').checked = f ? f.active : true;
+  document.getElementById('f-url-input').value = '';
+  document.getElementById('f-url-input').classList.add('hidden');
+  const box = document.getElementById('f-photo-preview');
+  box.innerHTML = f && f.image ? `<img src="${esc(f.image)}">` : '📷';
+  document.getElementById('fabric-modal').classList.add('active');
+}
+
+function closeFabricModal() {
+  document.getElementById('fabric-modal').classList.remove('active');
+  pendingFabricImage = null;
+}
+
+function handleFabricFile(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  compressImage(file, (dataUrl) => {
+    removeFabricImg = false;
+    pendingFabricImage = dataUrl;
+    document.getElementById('f-photo-preview').innerHTML = `<img src="${dataUrl}">`;
+    toast('Photo prête — elle sera enregistrée sur Drive.', 'ok');
+  });
+}
+
+function clearFabricImage() {
+  removeFabricImg = true;
+  pendingFabricImage = null;
+  document.getElementById('f-photo-file').value = '';
+  document.getElementById('f-url-input').value = '';
+  document.getElementById('f-photo-preview').innerHTML = '📷';
+}
+
+async function saveFabric() {
+  const id = document.getElementById('f-id').value;
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { toast('Le nom est obligatoire.', 'err'); return; }
+
+  let image = '';
+  const existing = FABRICS.find(x => String(x.id) === String(id));
+  if (removeFabricImg) {
+    image = '';
+  } else if (pendingFabricImage) {
+    setSaveBusy('save-fabric-btn', true);
+    toast('Envoi de la photo sur Google Drive…');
+    try {
+      const up = await api('adminUploadImage', { dataUrl: pendingFabricImage });
+      setSaveBusy('save-fabric-btn', false);
+      if (!up.success) throw new Error(up.error);
+      image = up.url;
+    } catch (e) {
+      setSaveBusy('save-fabric-btn', false);
+      toast('Échec de l\'upload photo : ' + e.message, 'err');
+      return;
+    }
+  } else {
+    const urlVal = document.getElementById('f-url-input').value.trim();
+    image = urlVal || (existing ? existing.image : '');
+  }
+
+  // ancienne photo retirée/remplacée → à supprimer du Drive
+  const deleteImages = [];
+  if (existing && existing.image && existing.image !== image) deleteImages.push(existing.image);
+  const fabric = {
+    id, name,
+    cat: document.getElementById('f-cat').value.trim(),
+    desc: document.getElementById('f-desc').value.trim(),
+    image,
+    active: document.getElementById('f-active').checked
+  };
+
+  // ── Mise à jour optimiste de l'interface ──
+  const isNew = !id;
+  const tempId = isNew ? 'tmp-' + Date.now() : id;
+  const optimisticItem = {
+    id: tempId, name: fabric.name, cat: fabric.cat,
+    desc: fabric.desc, image: fabric.image, active: fabric.active
+  };
+  const li = FABRICS.findIndex(x => String(x.id) === String(id));
+  const origIdx = li;
+  if (li >= 0) FABRICS[li] = optimisticItem; else FABRICS.push(optimisticItem);
+  closeFabricModal();
+  renderFabrics(); renderStats();
+
+  try {
+    const r = await api('adminSaveFabric', { fabric, deleteImages });
+    if (r && r.success) {
+      const ti = FABRICS.findIndex(x => String(x.id) === String(tempId));
+      if (ti >= 0) FABRICS[ti].id = r.id;
+      renderFabrics(); renderStats();
+      toast(id ? 'Tissu mis à jour ✅' : 'Tissu ajouté 🎉', 'ok');
+    } else {
+      await reconcileFabrics(tempId, existing, isNew, origIdx, optimisticItem, (r && r.error) || 'Erreur');
+    }
+  } catch (e) {
+    await reconcileFabrics(tempId, existing, isNew, origIdx, optimisticItem, 'Erreur serveur : ' + e.message);
+  }
+}
+
+function rollbackFabric(tempId, existing, isNew, origIdx) {
+  const ri = FABRICS.findIndex(x => String(x.id) === String(tempId));
+  if (ri >= 0) FABRICS.splice(ri, 1);
+  if (!isNew && existing) FABRICS.splice(Math.min(origIdx || 0, FABRICS.length), 0, existing);
+  renderFabrics(); renderStats();
+}
+
+// Resynchronise la liste des tissus avec la vérité du backend.
+async function reconcileFabrics(tempId, existing, isNew, origIdx, optimisticItem, errMsg) {
+  try {
+    const f = await fetchJson('getFabrics');
+    FABRICS = f.fabrics || [];
+    BRAND_PHOTO = f.brandPhoto || BRAND_PHOTO;
+    renderFabrics(); renderStats(); renderBrandPhoto();
+    const t = optimisticItem || {};
+    let saved = false;
+    if (existing) {
+      // Édition : on retrouve le tissu par son ID et on compare les champs modifiables
+      const fresh = FABRICS.find(x => String(x.id) === String(existing.id));
+      saved = !!(fresh &&
+        String(fresh.name || '').trim().toLowerCase() === String(t.name || '').trim().toLowerCase() &&
+        String(fresh.desc || '').trim() === String(t.desc || '').trim());
+    } else {
+      // Création : l'ID serveur est inconnu → on matche par nom
+      const n = String(t.name || '').trim().toLowerCase();
+      saved = !!n && FABRICS.some(x => String(x.name || '').trim().toLowerCase() === n);
+    }
+    toast(saved ? 'Enregistrement confirmé par le serveur ✅' : errMsg, saved ? 'ok' : 'err');
+  } catch (e2) {
+    rollbackFabric(tempId, existing, isNew, origIdx);
+    toast(errMsg, 'err');
+  }
+}
+// Suggestions de tissus existants dans le champ produit
+function suggestFabrics() {
+  const wrap = document.getElementById('p-fabric-chips');
+  const existing = [...new Set(FABRICS.map(f => f.name).filter(Boolean))];
+  wrap.innerHTML = existing.map(n => `<button class="chip" onclick="addFabricChip('${escAttr(n)}')">+ ${esc(n)}</button>`).join('');
+}
+
+function addFabricChip(name) {
+  const input = document.getElementById('p-fabrics');
+  const vals = input.value.split(',').map(s => s.trim()).filter(Boolean);
+  if (!vals.includes(name)) {
+    vals.push(name);
+    input.value = vals.join(', ');
+  }
+}
+
+// ══════════ COMMANDES ══════════
+function buildOrderFilters() {
+  const statuses = ['A traiter', 'Traiter', 'En cours', 'Expédiée', 'Livrée', 'Annulée'];
+  const wrap = document.getElementById('order-filters');
+  wrap.innerHTML = `<button class="chip active" onclick="setStatusFilter('')">Toutes</button>` +
+    statuses.map(s => `<button class="chip" onclick="setStatusFilter('${escAttr(s)}')">${esc(s)}</button>`).join('');
+}
+
+function setStatusFilter(s) {
+  activeStatusFilter = s;
+  document.querySelectorAll('#order-filters .chip').forEach(b => b.classList.toggle('active', b.textContent === (s || 'Toutes')));
+  renderOrders();
+}
+
+function badgeClass(statut) {
+  const s = String(statut || '').trim().toLowerCase();
+  if (s === 'a traiter') return 'b-a';
+  if (s === 'traiter') return 'b-t';
+  if (s === 'en cours') return 'b-c';
+  if (s === 'expédiée') return 'b-e';
+  if (s === 'livrée') return 'b-l';
+  return 'b-x';
+}
+
+function toDateInput(d) {
+  if (!d) return '';
+  if (d instanceof Date && !isNaN(d)) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  const m = String(d).match(/^(d{4})-(d{2})-(d{2})/);
+  return m ? String(d).slice(0, 10) : String(d);
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  const dt = new Date(d);
+  if (isNaN(dt)) return String(d);
+  return dt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) +
+    ' ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function renderOrders() {
+  const q = (document.getElementById('order-search').value || '').toLowerCase();
+  const filtered = ORDERS.filter(o =>
+    (!activeStatusFilter || String(o.statut || '').trim().toLowerCase() === activeStatusFilter.toLowerCase()) &&
+    (!q || String(o.name || '').toLowerCase().includes(q) ||
+          String(o.id || '').toLowerCase().includes(q) ||
+          String(o.phone || '').toLowerCase().includes(q))
+  );
+  const list = document.getElementById('orders-list');
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-state"><div class="e-ico">🛒</div><p>Aucune commande trouvée.</p></div>`;
+    return;
+  }
+  list.innerHTML = filtered.map(o => `
+    <div class="order-item" id="oi-${escAttr(o.id)}">
+      <div class="order-head" onclick="openOrderModal('${escAttr(o.id)}')">
+        <div class="order-ref">${esc(o.id)}</div>
+        <div class="order-meta">
+          <div class="nm">${esc(o.name || 'Client')}</div>
+          <div class="dt">${fmtDate(o.date)} · 📞 ${esc(o.phone || '—')}</div>
+        </div>
+        <span class="badge ${badgeClass(o.statut)}">${esc(o.statut || 'A traiter')}</span>
+        <div class="order-total">${o.total !== undefined && o.total !== '' ? Number(o.total).toFixed(2) + ' €' : '—'}</div>
+      </div>
+    </div>`).join('');
+}
+
+function openOrderModal(id) {
+  const o = ORDERS.find(x => String(x.id) === String(id));
+  if (!o) return;
+  document.getElementById('om-ref').textContent = 'Commande ' + o.id;
+  document.getElementById('om-client').textContent = 'Gestion de la commande';
+  document.getElementById('om-name').textContent = o.name || '—';
+  document.getElementById('om-phone').textContent = '📞 ' + (o.phone || '—');
+  document.getElementById('om-email').textContent = '✉️ ' + (o.email || '—');
+  document.getElementById('om-date').textContent = '🕐 Reçue le ' + fmtDate(o.date);
+  document.getElementById('om-articles').textContent = o.articles || '—';
+  document.getElementById('om-total').textContent = 'Total : ' + (o.total !== undefined && o.total !== '' ? Number(o.total).toFixed(2) + ' €' : '—');
+  const promo = (o.promoCode ? '🎁 Code : ' + o.promoCode + (o.promoReduction ? ' (−' + o.promoReduction + '%)' : '') : '');
+  document.getElementById('om-promo').textContent = promo;
+  document.getElementById('om-note').textContent = o.note || 'Aucune remarque';
+  document.getElementById('om-statut').value = o.statut || 'A traiter';
+  document.getElementById('om-date-proposee').value = toDateInput(o.dateProposee);
+  document.getElementById('om-prix-demande').value = o.prixDemande !== undefined && o.prixDemande !== '' ? o.prixDemande : '';
+  document.getElementById('om-remarques').value = o.note || '';
+  document.getElementById('om-date-souhaitee').textContent = o.dateSouhaitee || 'Non précisée';
+  document.getElementById('order-modal').classList.add('active');
+}
+
+function closeOrderModal() {
+  document.getElementById('order-modal').classList.remove('active');
+}
+
+async function saveOrderChanges() {
+  const o = ORDERS.find(x => String(x.id) === String(document.getElementById('om-ref').textContent.replace('Commande ', '')));
+  if (!o) return;
+  const order = {
+    id: o.id,
+    statut: document.getElementById('om-statut').value,
+    dateProposee: document.getElementById('om-date-proposee').value,
+    prixDemande: document.getElementById('om-prix-demande').value,
+    remarques: document.getElementById('om-remarques').value
+  };
+  // ── Mise à jour optimiste de l'interface ──
+  const prev = JSON.parse(JSON.stringify(o));
+  o.statut = order.statut;
+  o.dateProposee = order.dateProposee;
+  o.prixDemande = order.prixDemande;
+  o.note = order.remarques;
+  closeOrderModal();
+  renderOrders(); renderStats(); renderDashOrders();
+  try {
+    const r = await api('adminUpdateOrder', { order });
+    if (r && r.success) {
+      toast(r.emailSent ? 'Commande mise à jour ✅ Email envoyé à la cliente ✉️' : 'Commande mise à jour ✅', 'ok');
+    } else {
+      await reconcileOrders(o, prev, (r && r.error) || 'Erreur');
+    }
+  } catch (e) {
+    await reconcileOrders(o, prev, 'Erreur serveur : ' + e.message);
+  }
+}
+
+// Resynchronise les commandes avec la vérité du backend : si la commande a bien été
+// mise à jour malgré une réponse d'erreur, l'affichage optimiste reste.
+async function reconcileOrders(o, prev, errMsg) {
+  try {
+    const fresh = await fetchJson('getOrders');
+    const orders = Array.isArray(fresh) ? fresh : (fresh && fresh.orders) || [];
+    ORDERS = orders;
+    renderOrders(); renderStats(); renderDashOrders();
+    // Comparaison ciblée et sûre : le statut et le prix (la date peut avoir des formats
+    // différents entre le formulaire et la feuille → on évite un faux négatif qui ferait
+    // re-disparaître la carte à tort).
+    const normStatut = s => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const normPrix = s => String(s || '').replace(/[\s\u00A0]/g, '').replace(',', '.');
+    const saved = orders.some(x =>
+      String(x.id) === String(o.id) &&
+      normStatut(x.statut) === normStatut(o.statut) &&
+      (normPrix(x.prixDemande) === normPrix(o.prixDemande) || Number(normPrix(x.prixDemande)) === Number(normPrix(o.prixDemande)))
+    );
+    toast(saved ? 'Enregistrement confirmé par le serveur ✅' : errMsg, saved ? 'ok' : 'err');
+  } catch (e2) {
+    Object.assign(o, prev);
+    renderOrders(); renderStats(); renderDashOrders();
+    toast(errMsg, 'err');
+  }
+}
+// ══════════ TABLEAU DE BORD ══════════
+function renderDashOrders() {
+  const list = document.getElementById('dash-orders');
+  const recent = ORDERS.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+  if (!recent.length) {
+    list.innerHTML = `<div class="empty-state"><div class="e-ico">🛒</div><p>Pas encore de commande.</p></div>`;
+    return;
+  }
+  list.innerHTML = recent.map(o => `
+    <div class="order-item">
+      <div class="order-head" onclick="showView('commandes')">
+        <div class="order-ref">${esc(o.id)}</div>
+        <div class="order-meta">
+          <div class="nm">${esc(o.name || 'Client')}</div>
+          <div class="dt">${fmtDate(o.date)}</div>
+        </div>
+        <span class="badge ${badgeClass(o.statut)}">${esc(o.statut || 'A traiter')}</span>
+        <div class="order-total">${o.total !== undefined && o.total !== '' ? Number(o.total).toFixed(2) + ' €' : '—'}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ══════════ CONFIRMATION SUPPRESSION ══════════
+function askDelete(kind, id, name) {
+  document.getElementById('confirm-title').textContent = 'Supprimer « ' + name + ' » ?';
+  document.getElementById('confirm-text').textContent =
+    kind === 'produit' ? 'La création disparaîtra de la boutique.' : 'Le tissu disparaîtra de la page Tissus.';
+  confirmCb = async () => {
+    const action = kind === 'produit' ? 'adminDeleteProduct' : 'adminDeleteFabric';
+    const list = kind === 'produit' ? PRODUCTS : FABRICS;
+    const idx = list.findIndex(x => String(x.id) === String(id));
+    const removed = idx >= 0 ? list.splice(idx, 1)[0] : null;
+    closeConfirm();
+    renderProducts(); renderFabrics(); renderStats(); buildFilters(); fillCatDatalist();
+    try {
+      const r = await api(action, { id });
+      if (r.success) {
+        toast('Supprimé ✅', 'ok');
+      } else {
+        if (removed) list.splice(Math.min(idx, list.length), 0, removed);
+        renderProducts(); renderFabrics(); renderStats(); buildFilters(); fillCatDatalist();
+        toast(r.error || 'Erreur', 'err');
+      }
+    } catch (e) {
+      if (removed) list.splice(Math.min(idx, list.length), 0, removed);
+      renderProducts(); renderFabrics(); renderStats(); buildFilters(); fillCatDatalist();
+      toast('Erreur : ' + e.message, 'err');
+    }
+  };
+  document.getElementById('confirm-modal').classList.add('active');
+}
+function confirmAction() { if (confirmCb) confirmCb(); }
+function closeConfirm() {
+  confirmCb = null;
+  document.getElementById('confirm-modal').classList.remove('active');
+}
+
+// ══════════ RÉGLAGES ══════════
+async function changePassword() {
+  const oldPwd = document.getElementById('pw-old').value;
+  const newPwd = document.getElementById('pw-new').value;
+  const confirm = document.getElementById('pw-confirm').value;
+  if (!oldPwd || !newPwd) { toast('Remplissez tous les champs.', 'err'); return; }
+  if (newPwd !== confirm) { toast('Les mots de passe ne correspondent pas.', 'err'); return; }
+  if (newPwd.length < 8) { toast('Minimum 8 caractères.', 'err'); return; }
+  try {
+    const r = await api('adminChangePassword', { oldPassword: oldPwd, newPassword: newPwd });
+    if (r.success) {
+      toast('Mot de passe modifié ✅', 'ok');
+      document.getElementById('pw-old').value = '';
+      document.getElementById('pw-new').value = '';
+      document.getElementById('pw-confirm').value = '';
+    } else toast(r.error || 'Erreur', 'err');
+  } catch (e) {
+    toast('Erreur serveur : ' + e.message, 'err');
+  }
+}
+
+// ══════════ IMAGE : compression & utilitaires ══════════
+function compressImage(file, cb) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const maxDim = 1400;
+      let { width: w, height: h } = img;
+      if (Math.max(w, h) > maxDim) {
+        const r = maxDim / Math.max(w, h);
+        w = Math.round(w * r);
+        h = Math.round(h * r);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      cb(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function escAttr(s) {
+  return esc(s).replace(/'/g, '&#39;');
+}
+
+// ══════════ INIT ══════════
+document.addEventListener('DOMContentLoaded', () => {
+  if (TOKEN) enterApp();
+  else document.getElementById('login-screen').classList.remove('hidden');
+});
+</script>
+</body>
+</html>
