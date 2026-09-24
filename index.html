@@ -150,6 +150,8 @@ input,select,textarea{font-family:'Jost',sans-serif}
 .order-meta{flex:1;min-width:160px}
 .order-meta .nm{font-size:14px;font-weight:500}
 .order-meta .dt{font-size:12px;color:var(--text-light)}
+.pay-badge{background:#2e6b4f !important;color:#fff !important;margin-left:4px}
+.order-ship{font-size:11px;color:var(--text-light);margin-top:4px;padding-left:16px}
 .order-total{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--navy);min-width:80px;text-align:right}
 .badge{padding:5px 12px;border-radius:50px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#fff}
 .b-a{background:var(--amber)} .b-t{background:var(--teal)} .b-c{background:var(--indigo)}
@@ -471,6 +473,14 @@ input,select,textarea{font-family:'Jost',sans-serif}
         <button class="btn btn-primary" onclick="changePassword()">Mettre à jour</button>
       </div>
       <div class="settings-card">
+        <h3>🚚 Livraison & paiement en ligne</h3>
+        <p class="desc">Frais de port fixes, offerts à partir d'un montant d'achat. Ces valeurs s'affichent en bannière sur le site et s'appliquent au paiement en ligne (Stripe).</p>
+        <div class="form-group"><label>Frais de livraison (€)</label><input type="number" step="0.01" min="0" id="ship-fee" placeholder="5.99"></div>
+        <div class="form-group"><label>Livraison offerte à partir de (€)</label><input type="number" step="0.01" min="0" id="ship-min" placeholder="60"></div>
+        <button class="btn btn-primary" onclick="saveShippingConfig()">💾 Enregistrer la livraison</button>
+        <div id="ship-saved" style="display:none;margin-top:12px;color:#2e6b4f;font-size:13px;">✅ Réglages livraison enregistrés</div>
+      </div>
+      <div class="settings-card">
         <h3>ℹ️ Informations</h3>
         <p class="desc">Ressources utiles pour votre boutique.</p>
         <div class="info-line"><span>Site vitrine</span><b>jaysolution07.github.io/DouceGrace.fr</b></div>
@@ -632,6 +642,8 @@ input,select,textarea{font-family:'Jost',sans-serif}
         <div class="detail-line"><b id="om-name"></b></div>
         <div class="detail-line" id="om-phone"></div>
         <div class="detail-line" id="om-email"></div>
+        <div class="detail-line" id="om-address"></div>
+        <div class="detail-line" id="om-payment"></div>
         <div class="detail-line" id="om-date"></div>
       </div>
       <div class="detail-box">
@@ -670,6 +682,7 @@ input,select,textarea{font-family:'Jost',sans-serif}
       un e-mail récapitulatif est envoyé automatiquement à la cliente.
     </div>
     <div class="order-save-row">
+      <button class="btn btn-soft" onclick="resendBordereau()" id="om-bordereau-btn">📦 Renvoyer le bordereau</button>
       <button class="btn btn-soft" onclick="closeOrderModal()">Fermer</button>
       <button class="btn btn-primary" onclick="saveOrderChanges()">💾 Enregistrer</button>
     </div>
@@ -759,6 +772,37 @@ async function fetchJson(action) {
   return res.json();
 }
 
+// ══════════ LIVRAISON & PAIEMENT ══════════
+async function loadShippingConfig() {
+  try {
+    const c = await fetchJson('getConfig');
+    if (c && c.shippingFee != null) {
+      document.getElementById('ship-fee').value = c.shippingFee;
+      document.getElementById('ship-min').value = c.freeShippingMin;
+    }
+  } catch (e) { console.warn('Config livraison indisponible', e); }
+}
+async function saveShippingConfig() {
+  const fee = document.getElementById('ship-fee').value;
+  const min = document.getElementById('ship-min').value;
+  if (fee === '' || min === '' || Number(fee) < 0 || Number(min) <= 0) {
+    toast('Vérifiez les montants (frais ≥ 0, seuil > 0).', 'err');
+    return;
+  }
+  try {
+    const r = await api('adminSaveShippingConfig', { shippingFee: fee, freeShippingMin: min });
+    if (r && r.success) {
+      document.getElementById('ship-saved').style.display = 'block';
+      setTimeout(() => document.getElementById('ship-saved').style.display = 'none', 3000);
+      toast('Réglages livraison enregistrés ✅', 'ok');
+    } else {
+      toast((r && r.error) || 'Erreur lors de l\x27enregistrement.', 'err');
+    }
+  } catch (e) {
+    toast('Erreur serveur : ' + e.message, 'err');
+  }
+}
+
 // ══════════ TOAST ══════════
 let toastTimer = null;
 function toast(msg, type = '') {
@@ -813,6 +857,7 @@ function showView(name) {
   if (name === 'produits') renderProducts();
   if (name === 'tissus') renderFabrics();
   if (name === 'commandes') renderOrders();
+  if (name === 'reglages') loadShippingConfig();
   if (name === 'dashboard') refreshAll();
 }
 
@@ -1472,7 +1517,11 @@ function renderOrders() {
           <div class="dt">${fmtDate(o.date)} · 📞 ${esc(o.phone || '—')}</div>
         </div>
         <span class="badge ${badgeClass(o.statut)}">${esc(o.statut || 'A traiter')}</span>
+        ${(o.statutPaiement === 'Payée' || o.statutPaiement === 'Payé')
+          ? '<span class="badge pay-badge">💳 Payée</span>'
+          : ''}
         <div class="order-total">${o.total !== undefined && o.total !== '' ? Number(o.total).toFixed(2) + ' €' : '—'}</div>
+        <div class="order-ship">${o.address ? '📍 ' + esc([o.address, o.zip, o.city].filter(Boolean).join(', ').slice(0, 45)) : ''}</div>
       </div>
     </div>`).join('');
 }
@@ -1485,6 +1534,12 @@ function openOrderModal(id) {
   document.getElementById('om-name').textContent = o.name || '—';
   document.getElementById('om-phone').textContent = '📞 ' + (o.phone || '—');
   document.getElementById('om-email').textContent = '✉️ ' + (o.email || '—');
+  document.getElementById('om-address').textContent = o.relayName
+    ? '📍 ' + o.relayName + (o.relayAddress ? ' — ' + o.relayAddress : '')
+    : (o.address ? '📍 ' + [o.address, o.zip, o.city].filter(Boolean).join(', ') : '📍 Adresse non renseignée');
+  document.getElementById('om-payment').textContent = (o.statutPaiement === 'Payée' || o.statutPaiement === 'Payé')
+    ? '💳 Payée en ligne' + (o.stripeId ? ' (' + String(o.stripeId).slice(0, 12) + '…)' : '')
+    : (o.statutPaiement ? '💳 ' + o.statutPaiement : '');
   document.getElementById('om-date').textContent = '🕐 Reçue le ' + fmtDate(o.date);
   document.getElementById('om-articles').textContent = o.articles || '—';
   document.getElementById('om-total').textContent = 'Total : ' + (o.total !== undefined && o.total !== '' ? Number(o.total).toFixed(2) + ' €' : '—');
@@ -1501,6 +1556,31 @@ function openOrderModal(id) {
 
 function closeOrderModal() {
   document.getElementById('order-modal').classList.remove('active');
+}
+
+// Renvoie le bordereau d'expédition par email
+async function resendBordereau() {
+  const btn = document.getElementById('om-bordereau-btn');
+  if (!btn) return;
+  const o = ORDERS.find(x => String(x.id) === String(document.getElementById('om-ref').textContent.replace('Commande ', '')));
+  if (!o) return;
+  const label = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Envoi…';
+  try {
+    const res = await api('adminResendBordereau', { token: TOKEN, orderId: o.id });
+    if (res && res.success) {
+      btn.innerHTML = '✅ Bordereau envoyé !';
+      toast('Bordereau renvoyé par email 📦', 'ok');
+      setTimeout(() => { btn.innerHTML = label; btn.disabled = false; }, 2500);
+    } else {
+      btn.innerHTML = label; btn.disabled = false;
+      toast((res && res.error) ? res.error : "Échec de l'envoi", 'err');
+    }
+  } catch (e) {
+    btn.innerHTML = label; btn.disabled = false;
+    toast("Erreur lors de l'envoi", 'err');
+  }
 }
 
 async function saveOrderChanges() {
@@ -1575,7 +1655,11 @@ function renderDashOrders() {
           <div class="dt">${fmtDate(o.date)}</div>
         </div>
         <span class="badge ${badgeClass(o.statut)}">${esc(o.statut || 'A traiter')}</span>
+        ${(o.statutPaiement === 'Payée' || o.statutPaiement === 'Payé')
+          ? '<span class="badge pay-badge">💳 Payée</span>'
+          : ''}
         <div class="order-total">${o.total !== undefined && o.total !== '' ? Number(o.total).toFixed(2) + ' €' : '—'}</div>
+        <div class="order-ship">${o.address ? '📍 ' + esc([o.address, o.zip, o.city].filter(Boolean).join(', ').slice(0, 45)) : ''}</div>
       </div>
     </div>`).join('');
 }
