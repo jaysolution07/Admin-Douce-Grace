@@ -683,9 +683,34 @@ input,select,textarea{font-family:'Jost',sans-serif}
     </div>
     <div class="order-save-row">
       <button class="btn btn-soft" onclick="resendBordereau()" id="om-bordereau-btn">📦 Renvoyer le bordereau</button>
-      <button class="btn btn-soft" onclick="createLabel()" id="om-label-btn">🏷️ Étiquette Mondial Relay</button>
+      <button class="btn btn-soft" onclick="openLabelModal()" id="om-label-btn">🏷️ Étiquette Mondial Relay</button>
       <button class="btn btn-soft" onclick="closeOrderModal()">Fermer</button>
       <button class="btn btn-primary" onclick="saveOrderChanges()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MODAL ÉTIQUETTE (confirmation avant facturation) ══════════ -->
+<div class="modal-overlay" id="label-modal" onclick="if(event.target===this)closeLabelModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeLabelModal()">✕</button>
+    <h2>🏷️ Créer l'étiquette</h2>
+    <div class="modal-sub" id="lb-ref"></div>
+    <div class="detail-box" style="margin-bottom:14px">
+      <h4>📦 Colis à expédier</h4>
+      <div class="detail-line" id="lb-dest"></div>
+      <div class="detail-line" id="lb-mode"></div>
+      <div class="form-group" style="margin-top:12px">
+        <label>Poids du colis (kg)</label>
+        <input type="number" id="lb-weight" step="0.1" min="0.1" value="0.5" oninput="previewLabel()">
+      </div>
+      <div class="detail-line" id="lb-method"></div>
+      <div class="detail-line" id="lb-price" style="margin-top:8px;font-size:15px"></div>
+    </div>
+    <div id="lb-warning" style="padding:12px 16px;border-radius:12px;font-size:12.5px;line-height:1.6;background:var(--beige-light);border:1px solid var(--beige-mid);color:var(--text-light)"></div>
+    <div class="order-save-row" style="margin-top:16px">
+      <button class="btn btn-soft" onclick="closeLabelModal()">Annuler</button>
+      <button class="btn btn-primary" id="lb-confirm" onclick="confirmCreateLabel()" disabled>Créer l'étiquette</button>
     </div>
   </div>
 </div>
@@ -1611,32 +1636,150 @@ async function resendBordereau() {
   }
 }
 
+// ── ÉTIQUETTE : confirmation obligatoire, car chaque étiquette est facturée ──
+let lbOrderId = null, lbTimer = null, lbPreview = null;
+
+function findOrderForLabel() {
+  const ref = document.getElementById('om-ref').textContent.replace('Commande ', '').trim();
+  return ORDERS.find(x => String(x.id) === String(ref));
+}
+
+const lbPrixTxt = (v, cur) => Number(v).toFixed(2).replace('.', ',') + ' ' + ((cur || 'EUR') === 'EUR' ? '€' : esc(cur));
+
+function openLabelModal() {
+  const o = findOrderForLabel();
+  if (!o) return;
+  lbOrderId = o.id;
+  lbPreview = null;
+  document.getElementById('lb-ref').textContent = 'Commande ' + o.id + ' — ' + (o.name || '');
+  document.getElementById('lb-dest').textContent = o.relayName
+    ? '📍 ' + o.relayName + (o.relayAddress ? ' — ' + o.relayAddress : '')
+    : (o.address ? '🏠 ' + [o.address, o.zip, o.city].filter(Boolean).join(', ') : '🏠 Adresse non renseignée');
+  document.getElementById('lb-mode').textContent = o.relayName ? 'Livraison : Point Relais' : 'Livraison : Domicile';
+  document.getElementById('lb-method').textContent = 'Méthode Sendcloud : calcul…';
+  document.getElementById('lb-price').textContent = '';
+  document.getElementById('lb-warning').innerHTML = 'Chaque étiquette est <b>facturée</b> par Sendcloud dès sa création.';
+  document.getElementById('lb-weight').value = '0.5';
+  const btn = document.getElementById('lb-confirm');
+  btn.disabled = true;
+  btn.textContent = "Créer l'étiquette";
+  document.getElementById('label-modal').classList.add('active');
+  previewLabel();
+}
+
+function closeLabelModal() {
+  clearTimeout(lbTimer);
+  document.getElementById('label-modal').classList.remove('active');
+  lbOrderId = null;
+}
+
+function previewLabel() {
+  clearTimeout(lbTimer);
+  document.getElementById('lb-confirm').disabled = true;
+  lbTimer = setTimeout(runLabelPreview, 450);
+}
+
+async function runLabelPreview() {
+  if (!lbOrderId) return;
+  const btn = document.getElementById('lb-confirm');
+  const methodEl = document.getElementById('lb-method');
+  const priceEl = document.getElementById('lb-price');
+  const warnEl = document.getElementById('lb-warning');
+  const w = String(document.getElementById('lb-weight').value || '0.5');
+  methodEl.textContent = 'Méthode Sendcloud : calcul…';
+  try {
+    const p = await api('adminLabelPreview', { token: TOKEN, orderId: lbOrderId, weight: w });
+
+    // Backend pas encore déployé avec le contrôle : on garde la confirmation simple.
+    if (p && p.error && /inconnue/i.test(p.error)) {
+      lbPreview = null;
+      methodEl.textContent = 'Méthode Sendcloud : tarif indisponible (backend à mettre à jour)';
+      priceEl.textContent = '';
+      warnEl.innerHTML = 'Chaque étiquette est <b>facturée</b> par Sendcloud dès sa création, '
+        + 'et elle ne peut pas être annulée depuis ce portail.';
+      btn.disabled = false;
+      btn.textContent = "Créer l'étiquette";
+      return;
+    }
+    if (!p || p.error) {
+      lbPreview = null;
+      methodEl.textContent = 'Méthode Sendcloud : indisponible';
+      priceEl.textContent = '';
+      warnEl.innerHTML = '⚠️ Impossible de préparer l\'étiquette : ' + esc((p && p.error) || 'erreur inconnue');
+      btn.disabled = true;
+      return;
+    }
+
+    lbPreview = p;
+    methodEl.textContent = p.methodName
+      ? 'Méthode Sendcloud : ' + p.methodName + ' — ' + String(p.weight).replace('.', ',') + ' kg'
+      : 'Aucune méthode Mondial Relay ne correspond à ' + String(p.weight).replace('.', ',') + ' kg';
+    priceEl.innerHTML = (p.methodPrice !== null && p.methodPrice !== undefined)
+      ? '💶 Coût annoncé par Sendcloud : <b>' + lbPrixTxt(p.methodPrice, p.currency) + '</b>'
+      : '💶 Coût : Sendcloud ne renvoie pas de tarif pour cette méthode.';
+
+    const deja = !!(p.dejaEtiquette && (p.dejaEtiquette.tracking || p.dejaEtiquette.pdfUrl));
+    const alertes = [];
+    if (deja) {
+      alertes.push('⚠️ <b>Une étiquette existe déjà</b> pour cette commande'
+        + (p.dejaEtiquette.tracking ? ' (suivi ' + esc(p.dejaEtiquette.tracking) + ')' : '')
+        + ' : en créer une autre sera facturée une seconde fois.');
+    }
+    alertes.push('Chaque étiquette est <b>facturée</b> par Sendcloud dès sa création, et elle ne peut pas être annulée depuis ce portail.');
+    if (!p.sendcloudConfigured) alertes.push('❌ Clés Sendcloud absentes des Propriétés du script.');
+    if (p.relayIdMissing) alertes.push('❌ Point relais inconnu pour cette commande : crée cette étiquette manuellement dans Sendcloud.');
+    warnEl.innerHTML = alertes.join('<br>');
+
+    btn.disabled = !p.sendcloudConfigured || p.relayIdMissing || !p.methodName;
+    btn.textContent = deja
+      ? 'Créer quand même (2ᵉ étiquette)'
+      : "Créer l'étiquette" + (p.methodPrice ? ' · ' + lbPrixTxt(p.methodPrice, p.currency) : '');
+  } catch (e) {
+    methodEl.textContent = 'Méthode Sendcloud : indisponible';
+    warnEl.textContent = '⚠️ ' + e.message;
+    btn.disabled = true;
+  }
+}
+
+async function confirmCreateLabel() {
+  const btn = document.getElementById('lb-confirm');
+  const w = String(document.getElementById('lb-weight').value || '0.5');
+  btn.disabled = true;
+  btn.textContent = '⏳ Création…';
+  await createLabel(w);
+  if (document.getElementById('label-modal').classList.contains('active')) {
+    btn.disabled = false;
+    btn.textContent = "Créer l'étiquette";
+  }
+}
+
 // Crée la VRAIE étiquette Mondial Relay (via Sendcloud) de la commande :
 // numéro de suivi + PDF officiel. ⚠️ Facturée par Sendcloud à chaque création.
-async function createLabel() {
+async function createLabel(weight) {
   const btn = document.getElementById('om-label-btn');
-  if (!btn) return;
-  const o = ORDERS.find(x => String(x.id) === String(document.getElementById('om-ref').textContent.replace('Commande ', '')));
-  if (!o) return;
-  const w = prompt('Poids du colis en kg (ex : 0.5) :', '0.5');
-  if (w === null) return;
+  if (!btn) return false;
+  const o = findOrderForLabel();
+  if (!o) return false;
   const label = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = '⏳ Création…';
   try {
-    const res = await api('adminCreateLabel', { token: TOKEN, orderId: o.id, weight: w });
+    const res = await api('adminCreateLabel', { token: TOKEN, orderId: o.id, weight: String(weight || '0.5') });
     if (res && res.success) {
+      closeLabelModal();
       btn.innerHTML = '✅ Étiquette créée !';
       toast('Étiquette créée 🏷️' + (res.tracking ? ' Suivi : ' + res.tracking : ''), 'ok');
       if (res.labelUrl) window.open(res.labelUrl, '_blank');
       setTimeout(() => { btn.innerHTML = label; btn.disabled = false; }, 4000);
-    } else {
-      btn.innerHTML = label; btn.disabled = false;
-      toast((res && res.error) ? res.error : 'Échec de la création', 'err');
+      return true;
     }
+    btn.innerHTML = label; btn.disabled = false;
+    toast((res && res.error) ? res.error : 'Échec de la création', 'err');
+    return false;
   } catch (e) {
     btn.innerHTML = label; btn.disabled = false;
     toast('Erreur lors de la création', 'err');
+    return false;
   }
 }
 
