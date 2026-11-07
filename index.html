@@ -764,7 +764,25 @@ async function api(action, data = {}) {
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({ action, token: TOKEN, ...data })
   });
-  return res.json();
+  const json = await res.json();
+  if (json && typeof json.error === 'string' && /session/i.test(json.error)) sessionExpired(json.error);
+  return json;
+}
+
+// Jeton refusé par le serveur → on revient à l'écran de connexion au lieu de laisser
+// l'interface ouverte avec des enregistrements qui échouent en silence.
+function sessionExpired(msg) {
+  if (!TOKEN && !document.getElementById('login-screen').classList.contains('hidden')) return;
+  TOKEN = '';
+  localStorage.removeItem('dg_admin_token');
+  document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('login-screen').classList.remove('hidden');
+  const err = document.getElementById('login-error');
+  if (err) err.textContent = msg || 'Votre session a expiré. Merci de vous reconnecter.';
+  const pwd = document.getElementById('login-password');
+  if (pwd) { pwd.value = ''; pwd.focus(); }
+  toast('Session expirée — reconnectez-vous pour continuer.', 'err');
 }
 
 // ── LECTURES PUBLIQUES (GET) ──
@@ -936,7 +954,7 @@ function renderProducts() {
   grid.innerHTML = filtered.map(p => `
     <div class="card ${p.active ? '' : 'off-card'}">
       <div class="card-img">
-        ${p.image ? `<img src="${esc(imgSrc(p.image))}" alt="${esc(p.name)}" data-emoji="${esc(p.emoji || '🧵')}" onerror="imgFail(this, this.dataset.emoji)">` : `<span class="emoji-ph">${esc(p.emoji || '🧵')}</span>`}
+        ${p.image ? `<img src="${esc(imgSrc(p.image, 400))}" alt="${esc(p.name)}" loading="lazy" decoding="async" data-emoji="${esc(p.emoji || '🧵')}" onerror="imgFail(this, this.dataset.emoji)">` : `<span class="emoji-ph">${esc(p.emoji || '🧵')}</span>`}
         ${(p.images && p.images.length > 1) ? '<span class="card-badge multi">📷 ' + p.images.length + '</span>' : ''}
         ${p.active ? (p.custom ? '<span class="card-badge">Tissu au choix</span>' : '') : '<span class="card-badge off">Masquée</span>'}
       </div>
@@ -1020,7 +1038,7 @@ function closeProductModal() {
 
 function setProductPreview(i, url) {
   const box = document.getElementById('p-photo-preview-' + i);
-  box.innerHTML = url ? `<img src="${esc(imgSrc(url))}" onerror="this.style.display='none'">` : '📷';
+  box.innerHTML = url ? `<img src="${esc(imgSrc(url, 1200))}" onerror="this.style.display='none'">` : '📷';
 }
 
 function handleProductFile(ev, i) {
@@ -1044,13 +1062,16 @@ function clearProductImage(i) {
 }
 
 // Convertit toute URL Google Drive en URL d'image directe (lh3 = sans redirection)
-function imgSrc(url) {
+// width : largeur demandée à Google Drive (ex. 400 pour une vignette).
+// Sans ce paramètre le navigateur télécharge la photo d'origine (~800 Ko au lieu de ~50 Ko).
+function imgSrc(url, width) {
   url = String(url || '').trim();
   if (!url) return '';
-  let m = url.match(new RegExp('/file/d/([a-zA-Z0-9_-]+)'));
-  if (m) return 'https://lh3.googleusercontent.com/d/' + m[1];
-  m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (m) return 'https://lh3.googleusercontent.com/d/' + m[1];
+  const size = width ? '=w' + width : '';
+  let m = url.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/) ||
+          url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+          url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m) return 'https://lh3.googleusercontent.com/d/' + m[1] + size;
   return url;
 }
 // Secours : si l'image ne charge pas, on affiche l'emoji à la place
@@ -1074,7 +1095,7 @@ function setImageFromUrl(which, a, b) {
     pendingFabricImage = null;
     removeFabricImg = false;
     document.getElementById('f-photo-file').value = '';
-    document.getElementById('f-photo-preview').innerHTML = url ? `<img src="${esc(imgSrc(url))}" onerror="this.style.display='none'">` : '📷';
+    document.getElementById('f-photo-preview').innerHTML = url ? `<img src="${esc(imgSrc(url, 1200))}" onerror="this.style.display='none'">` : '📷';
   }
 }
 
@@ -1230,7 +1251,7 @@ function renderFabrics() {
   grid.innerHTML = filtered.map(f => `
     <div class="card ${f.active ? '' : 'off-card'}">
       <div class="card-img">
-        ${f.image ? `<img src="${esc(f.image)}" alt="${esc(f.name)}">` : '<span class="emoji-ph">🧵</span>'}
+        ${f.image ? `<img src="${esc(imgSrc(f.image, 400))}" alt="${esc(f.name)}" loading="lazy" decoding="async">` : '<span class="emoji-ph">🧵</span>'}
         ${!f.active ? '<span class="card-badge off">Indisponible</span>' : ''}
       </div>
       <div class="card-body">
@@ -1270,7 +1291,7 @@ function toggleFabric(id, active) {
 }
 function renderBrandPhoto() {
   const box = document.getElementById('brand-photo-prev');
-  box.innerHTML = BRAND_PHOTO ? `<img src="${esc(imgSrc(BRAND_PHOTO))}" onerror="this.style.display='none'">` : '🖼️';
+  box.innerHTML = BRAND_PHOTO ? `<img src="${esc(imgSrc(BRAND_PHOTO, 800))}" onerror="this.style.display='none'">` : '🖼️';
 }
 
 async function uploadBrandPhoto(ev) {
