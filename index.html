@@ -792,16 +792,9 @@ async function fetchJson(action) {
 }
 
 // ── COMMANDES (POST + jeton : elles contiennent les coordonnées des clientes) ──
-// Le repli GET ne sert qu'à la transition : il disparaîtra une fois le backend
-// redéployé avec le contrôle du jeton.
 async function fetchOrders() {
   const r = await api('getOrders');
-  if (Array.isArray(r)) return r;
-  if (r && r.error && !/session/i.test(r.error)) {
-    const ancien = await fetchJson('getOrders');
-    return Array.isArray(ancien) ? ancien : (ancien && ancien.orders) || [];
-  }
-  return [];
+  return Array.isArray(r) ? r : [];
 }
 
 // ══════════ LIVRAISON & PAIEMENT ══════════
