@@ -791,6 +791,19 @@ async function fetchJson(action) {
   return res.json();
 }
 
+// ── COMMANDES (POST + jeton : elles contiennent les coordonnées des clientes) ──
+// Le repli GET ne sert qu'à la transition : il disparaîtra une fois le backend
+// redéployé avec le contrôle du jeton.
+async function fetchOrders() {
+  const r = await api('getOrders');
+  if (Array.isArray(r)) return r;
+  if (r && r.error && !/session/i.test(r.error)) {
+    const ancien = await fetchJson('getOrders');
+    return Array.isArray(ancien) ? ancien : (ancien && ancien.orders) || [];
+  }
+  return [];
+}
+
 // ══════════ LIVRAISON & PAIEMENT ══════════
 async function loadShippingConfig() {
   try {
@@ -886,12 +899,12 @@ async function refreshAll() {
     const [p, f, o] = await Promise.all([
       fetchJson('getProducts'),
       fetchJson('getFabrics'),
-      fetchJson('getOrders')
+      fetchOrders()
     ]);
     PRODUCTS = p.apps || [];
     FABRICS = f.fabrics || [];
     BRAND_PHOTO = f.brandPhoto || '';
-    ORDERS = o || [];
+    ORDERS = Array.isArray(o) ? o : [];
     renderStats();
     renderProducts();
     renderFabrics();
@@ -1668,7 +1681,7 @@ async function saveOrderChanges() {
 // mise à jour malgré une réponse d'erreur, l'affichage optimiste reste.
 async function reconcileOrders(o, prev, errMsg) {
   try {
-    const fresh = await fetchJson('getOrders');
+    const fresh = await fetchOrders();
     const orders = Array.isArray(fresh) ? fresh : (fresh && fresh.orders) || [];
     ORDERS = orders;
     renderOrders(); renderStats(); renderDashOrders();
